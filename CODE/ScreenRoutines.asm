@@ -144,15 +144,28 @@ OutputInter:
     CALL ResetScreenTimer
     LD A, $40
     LD (DisableScreenFlag), A       ;reenable screen output
-    ;upload intermediate graphics
+    ;
     DI
+    ; upload intermediate graphics
     LD A, :Tiles_BG_Inter
     LD (MAPPER_SLOT2), A
-    LD HL, VRAM_ADR_BG_INTER | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_BG_Inter
-    LD BC, _sizeof_Tiles_BG_Inter
-    CALL copyToVDP
+    LD DE, VRAM_ADR_BG_INTER | VRAMWRITE
+    CALL zx7_decompressVRAM
+    ; UPLOAD PLAYER EMBLEM
+    LD A, :Tiles_Mario_Emblem
+    LD (MAPPER_SLOT2), A
+    LD HL, $28E0 | VRAMWRITE
+    RST setVDPAddress
+    LD HL, Tiles_Mario_Emblem
+    LD A, (CurrentPlayer)
+    OR A
+    JP Z, +
+    LD HL, Tiles_Luigi_Emblem
++:
+    LD BC, $20 * $100 + VDPDATA_PORT
+    OTIR
+    ; RESET BANK, ENABLE INTS
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     EI
@@ -167,11 +180,9 @@ GameOverInter:
     DI
     LD A, :Tiles_BG_Inter
     LD (MAPPER_SLOT2), A
-    LD HL, VRAM_ADR_BG_INTER | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_BG_Inter
-    LD BC, _sizeof_Tiles_BG_Inter
-    CALL copyToVDP
+    LD DE, VRAM_ADR_BG_INTER | VRAMWRITE
+    CALL zx7_decompressVRAM
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     EI
@@ -185,24 +196,18 @@ NoInter:
 ;-------------------------------------------------------------------------------------
 
 AreaParserTaskControl:
-    LD A, (TileDataLoadedFlag)
-    OR A
-    CALL Z, LoadLevelTileData
     XOR A
     LD (DisableScreenFlag), A
-    INC A
-    LD (TileDataLoadedFlag), A    
-;
 TaskLoop:
     CALL AreaParserTaskHandler      ;render column set of current area
     LD HL, ColumnSets               ;do we need to render more column sets?
     DEC (HL)
-    RET P ;JP P, OutputCol
+    RET P
     LD HL, ScreenRoutineTask        ;if not, move on to the next task
     INC (HL)
     LD A, <VRAM_ADR_NAMETBL + $42
     LD (CurrentNTAddr), A
-    RET
+    JP LoadLevelTileData
 
 ;-------------------------------------------------------------------------------------
 
@@ -360,18 +365,11 @@ DrawTitleScreen:
     JP NZ, IncModeTask_B                ;if not, exit
 ;   Load graphics for TitleScreen
     DI
-    ; Logo
     LD A, :Tiles_BG_TitleScreen
     LD (MAPPER_SLOT2), A
-    LD HL, (VRAM_ADR_SPR + $B7 * SMS_TILE_SIZE) | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_BG_TitleScreen
-    LD BC, _sizeof_Tiles_BG_TitleScreen
-    CALL copyToVDP
-    ; Text and Icons (16 Tiles)
-    LD BC, $0000 + VDPDATA_PORT
-    OTIR
-    OTIR
+    LD DE, VRAM_ADR_BG_TITLE | VRAMWRITE
+    CALL zx7_decompressVRAM
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     EI
@@ -425,11 +423,6 @@ IncModeTask_B:
 LoadLevelTileData:
 ;   TURN OFF INTERRUPTS
     DI
-;   MANUALLY TURN OFF THE SCREEN
-    LD A, %10100000
-    OUT (VDPCON_PORT), A
-    LD A, $81
-    OUT (VDPCON_PORT), A
 ;   LOAD ENEMY SPRITES
     CALL LoadEnemySprites
 ;   UPLOAD TILES FOR AREA
@@ -443,11 +436,9 @@ LoadLevelTileData:
     ; LOAD OVERWORLD GFX AS BASE
     LD A, :Tiles_BG_Overworld
     LD (MAPPER_SLOT2), A
-    LD HL, VRAM_ADR_BG_LVL | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_BG_Overworld
-    LD BC, _sizeof_Tiles_BG_Overworld
-    CALL copyToVDP
+    LD DE, VRAM_ADR_BG_LVL | VRAMWRITE
+    CALL zx7_decompressVRAM
     ; LOAD SPECIAL TILES DEPENDING ON AREATYPE
     LD A, (AreaType)
     OR A
@@ -457,16 +448,76 @@ LoadLevelTileData:
     DEC A
     JP Z, UndergroundSetup
 CastleSetup:
+    ; LAVA FOR SLOT 1
+    LD A, :AnimatedBGTileInits
+    LD (MAPPER_SLOT2), A
+    LD HL, AnimatedBGTileInits@Lava
+    LD DE, BGTileQueue1 + $01
+    LD BC, $0008
+    LDIR
+    ; NOTHING FOR SLOT 2
+    LD HL, BGTileQueue2.Timer
+    LD (HL), $FF
+    LD HL, BGTileQueue2.UpdateFlag
+    LD (HL), $00
     ; UNIQUE TILES FOR CASTLE AREA
+    LD A, :Tiles_BG_Castle
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_BG_Castle
+    LD DE, $2F20 | VRAMWRITE
+    CALL zx7_decompressVRAM
     ; PODOBOO SPRITE
     ; FIRE PROJECTILE SPRITES
     ; BOWSER SPRITES
     ; RETAINER/PRINCESS SPRITE
     JP TileLoadDone
 WaterAreaSetup:
+    ; WATER COIN FOR SLOT 0
+    LD A, :AnimatedBGTileInits
+    LD (MAPPER_SLOT2), A
+    LD HL, AnimatedBGTileInits@WaterCoin
+    LD DE, BGTileQueue0 + $01
+    LD BC, $0008
+    LDIR
+    ; WATER FOR SLOT 1
+    LD A, :AnimatedBGTileInits
+    LD (MAPPER_SLOT2), A
+    LD HL, AnimatedBGTileInits@WaterA0
+    LD DE, BGTileQueue1 + $01
+    LD BC, $0008
+    LDIR
+    ; NOTHING FOR SLOT 2
+    LD HL, BGTileQueue2.Timer
+    LD (HL), $FF
+    LD HL, BGTileQueue2.UpdateFlag
+    LD (HL), $00
     ; UNIQUE TILES FOR WATER AREA
+    LD A, :Tiles_BG_Water
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_BG_Water
+    LD DE, $3280 | VRAMWRITE
+    CALL zx7_decompressVRAM
+    ; LOAD WATER CASTLE TILES IF ON W8-4
+    LD A, (WorldNumber)
+    LD H, A
+    LD A, (LevelNumber)
+    LD L, A
+    OR A
+    LD DE, $0703
+    SBC HL, DE
+    JP NZ, TileLoadDone
+    LD A, :Tiles_BG_WaterCastle
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_BG_WaterCastle
+    LD DE, $3680 | VRAMWRITE
+    CALL zx7_decompressVRAM
     JP TileLoadDone
 OverWorldSetup:
+    LD A, (BackgroundColorCtrl)
+    CP A, $05
+    JP Z, SnowOverworldSetup
+    CP A, $06
+    JP Z, SnowOverworldSetup
     ; NOTHING FOR SLOT 1
     LD HL, BGTileQueue1.Timer
     LD (HL), $FF
@@ -480,15 +531,33 @@ OverWorldSetup:
     LD BC, $0008
     LDIR
     JP TileLoadDone
+SnowOverworldSetup:
+    ; WATER FOR SLOT 1
+    LD A, :AnimatedBGTileInits
+    LD (MAPPER_SLOT2), A
+    LD HL, AnimatedBGTileInits@WaterA1
+    LD DE, BGTileQueue1 + $01
+    LD BC, $0008
+    LDIR
+    ; NOTHING FOR SLOT 2
+    LD HL, BGTileQueue2.Timer
+    LD (HL), $FF
+    LD HL, BGTileQueue2.UpdateFlag
+    LD (HL), $00
+    ; UPLOAD TILES FOR SNOW
+    LD A, :Tiles_BG_Snow
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_BG_Snow
+    LD DE, $3680 | VRAMWRITE
+    CALL zx7_decompressVRAM
+    JP TileLoadDone
 UndergroundSetup:
     ; UNIQUE TILES FOR UNDERGROUND AREA
     LD A, :Tiles_BG_Underground
     LD (MAPPER_SLOT2), A
-    LD HL, $3A80 | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_BG_Underground
-    LD BC, _sizeof_Tiles_BG_Underground
-    CALL copyToVDP
+    LD DE, $3A80 | VRAMWRITE
+    CALL zx7_decompressVRAM
     ; SLOT 1 'LATERN'
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
@@ -512,12 +581,9 @@ LoadEnemySprites:
 ;   LOAD BASE ENEMY SPRITE SHEET
     LD A, :Tiles_SPR_Enemies
     LD (MAPPER_SLOT2), A
-    ;LD HL, VRAM_ADR_SPR_EMY | VRAMWRITE
-    LD HL, $0A60 | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_SPR_Enemies
-    LD BC, _sizeof_Tiles_SPR_Enemies
-    CALL copyToVDP
+    LD DE, VRAM_ADR_SPR_EMY | VRAMWRITE
+    CALL zx7_decompressVRAM
 ;   LOAD LAKITU ON CERTAIN LEVELS (4-1,6-1,8-2)
     LD A, (WorldNumber)
     LD H, A
@@ -540,8 +606,7 @@ LoadEnemySprites:
 LoadLakitu:
     LD A, :Tiles_SPR_Lakitu
     LD (MAPPER_SLOT2), A
-    LD HL, $1260 | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_SPR_Lakitu
-    LD BC, _sizeof_Tiles_SPR_Lakitu
-    JP copyToVDP
+    LD DE, $1260 | VRAMWRITE
+    JP zx7_decompressVRAM
+    

@@ -139,6 +139,10 @@ ForeSceneryData:
     .db MT_BLANK, MT_BLANK, MT_BLANK, MT_BLANK, MT_BLANK
     .db MT_BLANK, MT_BLANK
     .db MT_BLANK, MT_BLANK, MT_BLANK, MT_BLANK, MT_WATER_TOP;, MT_WATER 
+@OverLava:
+    .db MT_BLANK, MT_BLANK, MT_BLANK, MT_BLANK, MT_BLANK
+    .db MT_BLANK, MT_BLANK
+    .db MT_BLANK, MT_BLANK, MT_BLANK, MT_BLANK, MT_LAVA_TOP 
 .ENDS
 
 
@@ -272,6 +276,12 @@ RendFore:
     ADD A, B
     LD HL, ForeSceneryData
     addAToHL8_M
+;
+    LD A, (AreaType)
+    CP A, $03
+    JP NZ, +
+    LD HL, ForeSceneryData@OverLava
++:
 ;   Copy foreground scenery data to metatile buffer
     LD DE, MetatileBuffer
     LD B, $0C
@@ -1330,10 +1340,15 @@ EmptyChkLoop:
 
 Hole_Water:
     CALL ChkLrgObjLength                ;get low nybble and save as length
+    LD A, (AreaType)
+    CP A, $03
     LD A, MT_WATER_TOP                  ;render waves
+    JP NZ, +
+    LD A, MT_LAVA_TOP
++:
     LD (MetatileBuffer+10), A
     LD BC, $0B01                        ;now render the water underneath
-    LD A, MT_WATER
+    INC A
     JP RenderUnderPart
 
 ;--------------------------------

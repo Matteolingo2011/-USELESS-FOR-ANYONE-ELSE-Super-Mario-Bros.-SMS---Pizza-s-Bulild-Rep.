@@ -674,7 +674,6 @@
     ;AreaData:                       dsb $02
     ;EnemyData:                      dsb $02
 
-    TileDataLoadedFlag:             dsb $01
     PauseButtonFlag:                dsb $01
     BlockBufferColumnPos:           dsb $01
     MetatileBuffer:                 dsb $0D

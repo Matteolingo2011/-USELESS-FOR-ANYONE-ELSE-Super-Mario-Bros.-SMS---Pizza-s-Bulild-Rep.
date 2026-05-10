@@ -173,45 +173,17 @@ Start:
 ;   LOAD CONSTANT BACKGROUND TILES
     LD A, :Tiles_BG_Comm
     LD (MAPPER_SLOT2), A 
-    LD HL, VRAM_ADR_BG_COMM | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_BG_Comm
-    LD BC, _sizeof_Tiles_BG_Comm
-    CALL copyToVDP
+    LD DE, VRAM_ADR_BG_COMM | VRAMWRITE
+    CALL zx7_decompressVRAM
 ;   LOAD (mostly) CONSTANT SPRITE TILES
     LD A, :Tiles_SPR_Comm
     LD (MAPPER_SLOT2), A
-    LD HL, VRAM_ADR_SPR_COMM | VRAMWRITE
-    RST setVDPAddress
     LD HL, Tiles_SPR_Comm
-    LD BC, _sizeof_Tiles_SPR_Comm
-    CALL copyToVDP
-;   LOAD (most) ENEMY SPRITE TILES (TEST)
-    ; LD A, :Tiles_SPR_Enemies
-    ; LD (MAPPER_SLOT2), A
-    ; LD HL, VRAM_ADR_SPR_EMY | VRAMWRITE
-    ; RST setVDPAddress
-    ; LD HL, Tiles_SPR_Enemies
-    ; LD BC, _sizeof_Tiles_SPR_Enemies
-    ; CALL copyToVDP
-;   LOAD LEVEL BACKGROUND TILES (TEST)
-    ; LD A, :Tiles_BG_Overworld
-    ; LD (MAPPER_SLOT2), A
-    ; LD HL, VRAM_ADR_BG_LVL | VRAMWRITE
-    ; RST setVDPAddress
-    ; LD HL, Tiles_BG_Overworld
-    ; LD BC, _sizeof_Tiles_BG_Overworld
-    ; CALL copyToVDP
-;   LOAD BACKGROUND PALETTE (TEST)
-    ; LD A, :GroundPaletteData
-    ; LD (MAPPER_SLOT2), A 
-    ; LD HL, $C000 | VRAMWRITE
-    ; RST setVDPAddress
-    ; LD HL, GroundPaletteData + $03
-    ; LD BC, $2000 + VDPDATA_PORT
-    ; OTIR
-;
-    LD A, BANK_SLOT2                ; restore bank
+    LD DE, VRAM_ADR_SPR_COMM | VRAMWRITE
+    CALL zx7_decompressVRAM
+;   SET DEFAULT BANK FOR SLOT 2
+    LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A 
 ;-------------------------------------------------------------------------------------
 ;   BOOT CHECK
@@ -838,6 +810,9 @@ OperModeExecutionTree:
 ;   SOUND DRIVER
 .INCLUDE "SoundDriver.asm"
 
+;   ZX7 DECOMPRESSION ROUTINES
+.INCLUDE "decomp.asm"
+
 ;-------------------------------------------------------------------------------------
 
 .SECTION "Game Text Stripe Data TBL" BANK BANK_SLOT2 SLOT 2 FREE
@@ -1419,7 +1394,7 @@ WriteVeriBlock_W:
 WaterPaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
-    .db $00, $00, $22, $26, $27, $24, $28, $29, $2B, $00, $3E, $2F, $3A, $3F, $21, $2E
+    .db $00, $00, $22, $26, $27, $24, $28, $29, $2B, $25, $3E, $2F, $2A, $3F, $21, $2E
     .db $00, $00, $21, $27, $2B, $24, $2C, $26, $3B, $2F, $3A, $3F, $23, $22, $30, $28
     .db $00
 .ENDS
@@ -1446,7 +1421,7 @@ UndergroundPaletteData:
 CastlePaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
-    .db $00, $00, $10, $15, $2A, $01, $08, $0C, $05, $0A, $2B, $0F, $02, $3F, $07, $2D
+    .db $00, $00, $10, $15, $2A, $01, $06, $1B, $05, $0A, $2B, $0F, $02, $3F, $07, $2D
     .db $00, $00, $10, $15, $2A, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $00
 .ENDS
@@ -1623,7 +1598,7 @@ TitleScreenData:
 ;   "V0.12"
     .dw swapBytes(xyToNameTbl_M(22, 13))
     .db StripeCount($0A)
-    .dw $00B7, BG_MACRO($0100), $00B8, BG_MACRO($0101), BG_MACRO($0102)
+    .dw $08B7, BG_MACRO($0100), $08B8, BG_MACRO($0101), BG_MACRO($0102)
 ;   "TOP-      0"
     .dw swapBytes(xyToNameTbl_M(12, 20))
     .db StripeCount($08)
@@ -1834,7 +1809,7 @@ Palette0_MTiles:
     .dw BLANKTILE, $015E, BLANKTILE, $015F                                  ; left
     .dw BLANKTILE, $015F, BLANKTILE, $0160                                  ; right
     ; Chain
-    .dw $00, $00, $00, $00
+    .dw $00, $0194, $0194, $00
     ; Trees
     .dw BG_MACRO($0183), BG_MACRO($0189), BG_MACRO($0185), BG_MACRO($018A)  ; tall top, top half
     .dw BG_MACRO($0183), BG_MACRO($0184), BG_MACRO($0185), BG_MACRO($0186)  ; short top
@@ -1868,41 +1843,17 @@ Palette0_MTiles:
     .dw BG_MACRO($1178), BG_MACRO($1179), BG_MACRO($1178), BG_MACRO($1179)  ; sideways pipe shaft bottom
     .dw BG_MACRO($117A), BG_MACRO($117B), BG_MACRO($1169), BG_MACRO($1169)  ; sideways pipe joint bottom
     ; Seaplant
-    .dw $00, $00, $00, $00
+    .dw $01CC, $01CD, $01CE, $01CF
     ; Blank for bricks/blocks that are hit
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
+    ; Sand
+    .dw $0194, $0195, $0196, $0197
+    ; --- CLIMBABLE METATILES START HERE ---
     ; Flagpole
     .dw BLANKTILE, BG_MACRO($017C), BLANKTILE, BG_MACRO($017D)              ; ball
     .dw BG_MACRO($0154), BG_MACRO($0154), BG_MACRO($0155), BG_MACRO($0155)  ; shaft
     ; Blank for vines
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
-
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ; .dw $00, $00, $00, $00
-    ;.dw $00, $00, $00, $00
-    ;.dw $00, $00, $00, $00
-    ;.dw $00, $00, $00, $00
-    ;.dw $00, $00, $00, $00
-    ;.dw $00, $00, $00, $00
-    ;.dw $00, $00, $00, $00
-
 
 Palette1_MTiles:
     ; Rope
@@ -1964,8 +1915,8 @@ Palette1_MTiles:
     ; Solid blocks
     .dw BG_MACRO($01A0), BG_MACRO($01A1), BG_MACRO($01A2), BG_MACRO($01A3)  ; 3D block
     .dw BG_MACRO($11A0), BG_MACRO($11A1), BG_MACRO($11A2), BG_MACRO($11A3)  ; 3D block PRIORITY (for pipes)
-    .dw $00, $00, $00, $00                                                  ; white wall (castle levels)
-    .dw $00, $00, $00, $00                                                  ; white wall (castle levels) PRI
+    .dw $01D8, $01D9, $01DA, $01DB                                          ; white wall (castle levels)
+    .dw $11D8, $11D9, $11DA, $11DB                                          ; white wall (castle levels) PRI
     ; Bridge
     .dw BG_MACRO($017E), BLANKTILE, BG_MACRO($017E), BLANKTILE
     ; Bullet Bill
@@ -1976,12 +1927,13 @@ Palette1_MTiles:
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE                          ; blank for jumpspring
     .dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)              ; half brick 
     ; Solid brick for water levels
-    .dw $00, $00, $00, $00
+    .dw $01D0, $01D1, $01D2, $01D3
     ; Half brick (unused?)
     .dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)
     ; Water pipe
-    .dw $00, $00, $00, $00
-    .dw $00, $00, $00, $00
+    .dw BG_MACRO($116C), BG_MACRO($116D), BG_MACRO($116E), BG_MACRO($116F)
+    .dw BG_MACRO($1174), BG_MACRO($1175), BG_MACRO($1176), BG_MACRO($1177)
+    ; --- CLIMBABLE METATILES START HERE ---
     ; Flagball (unused)
     .dw BLANKTILE, BG_MACRO($017C), BLANKTILE, BG_MACRO($017D)
 
@@ -1994,14 +1946,17 @@ Palette2_MTiles:
     .dw BLANKTILE, BLANKTILE, BG_MACRO($011E), BLANKTILE                    ; right bottom
     .dw BG_MACRO($011F), BLANKTILE, BG_MACRO($0120), BLANKTILE              ; middle bottom
     .dw BG_MACRO($0121), BLANKTILE, BLANKTILE, BLANKTILE                    ; left bottom
-    ; Water/Lava
+    ; Water
     .dw $01E5, $01E7, $01E6, $01E7                                          ; waves
     .dw $01E7, $01E7, $01E7, $01E7                                          ; body
+    ; Lava
+    .dw $01EC, $01ED, $01EE, $01EF                                          ; waves
+    .dw $01E5, $01E5, $01E5, $01E5                                          ; body
     ; --- METATILES WITH COLLISION START HERE ---
     ; Cloud Terrain
     .dw BG_MACRO($0129), BG_MACRO($012A), BG_MACRO($0329), BG_MACRO($032A)
     ; Bowser's bridge
-    .dw $00, $00, $00, $00
+    .dw $0195, $0196, $0195, $0197
     
 
 Palette3_MTiles:
@@ -2015,7 +1970,7 @@ Palette3_MTiles:
     ; Empty Block
     .dw BG_MACRO($01A5), BG_MACRO($01A6), BG_MACRO($01A7), BG_MACRO($01A8)
     ; Axe
-    .dw $00, $00, $00, $00
+    .dw $01C4, $01C5, $01C6, $01C7
 
 .ENDS
 
@@ -2032,32 +1987,86 @@ Palette3_MTiles:
 .ENDS
 
 ;-------------------------------------------------------------------------------------
+.SECTION "Player Emblem Tiles" BANK BANK_SLOT2 SLOT 2 FREE
+
+Tiles_Mario_Emblem:
+    .db $38 $38 $00 $38 $10 $10 $6C $7C $82 $82 $7C $FE $AA $AA $54 $FE $BA $BA $44 $FE $38 $38 $44 $7C $38 $38 $00 $38 $00 $00 $00 $00
+Tiles_Luigi_Emblem:
+    .db $38 $38 $00 $38 $5C $7C $20 $5C $DE $FE $20 $DE $DE $FE $20 $DE $DE $FE $20 $DE $44 $7C $38 $44 $38 $38 $00 $38 $00 $00 $00 $00
+.ENDS
+
+;   COMPRESSED TILE DATA
+;-------------------------------------------------------------------------------------
 .SECTION "BG Common Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
 
 Tiles_BG_Comm:
-    .INCLUDE "BG_Comm.inc"
-
-Tiles_BG_Overworld:
-    .INCLUDE "BG_Overworld.inc"
-
-Tiles_BG_TitleScreen:
-    .INCLUDE "BG_TitleScreenVer.inc"
-    .INCLUDE "BG_TitleScreen.inc"
-
-Tiles_BG_TitleScreenText:
-    .INCLUDE "BG_TitleScreenText.inc"
-
-Tiles_BG_Inter:
-    .INCLUDE "BG_Inter.inc"
-
+    .INCBIN "BG_Comm.zx7"
 .ENDS
 
-;-------------------------------------------------------------------------------------
-.SECTION "Underground BG Tiles" BANK BANK_SLOT2 SLOT 2 FREE
+.SECTION "BG Titlescreen Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_BG_TitleScreen:
+    .INCBIN "BG_TitleScreen.zx7"
+.ENDS
+
+.SECTION "BG Intermediate Screen Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_BG_Inter:
+    .INCBIN "BG_Inter.zx7"
+.ENDS
+
+.SECTION "BG Overworld Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_BG_Overworld:
+    .INCBIN "BG_Overworld.zx7"
+.ENDS
+
+.SECTION "BG Underground Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
 
 Tiles_BG_Underground:
-    .INCLUDE "BG_Underground.inc"
+    .INCBIN "BG_Underground.zx7"
+.ENDS
 
+.SECTION "BG Snow Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_BG_Snow:
+    .INCBIN "BG_Snow.zx7"
+.ENDS
+
+.SECTION "BG Water Tiles" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_Water:
+    .INCBIN "BG_Water.zx7"
+.ENDS
+
+.SECTION "BG Castle Tiles" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_Castle:
+    .INCBIN "BG_Castle.zx7"
+.ENDS
+
+.SECTION "BG Water Castle Tiles" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_WaterCastle:
+    .INCBIN "BG_WaterCastle.zx7"
+.ENDS
+
+.SECTION "SPR Common Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_SPR_Comm:
+    .INCBIN "SPR_Comm.zx7"
+.ENDS
+
+.SECTION "Base Enemy Sprite Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_SPR_Enemies:
+    .INCBIN "SPR_Enemies.zx7"
+.ENDS
+
+.SECTION "Lakitu Enemy Sprite Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
+
+Tiles_SPR_Lakitu:
+    .INCBIN "SPR_Lakitu.zx7"
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -2103,28 +2112,15 @@ Tiles_BG_Underground:
 .ENDS
 
 ;-------------------------------------------------------------------------------------
-.SECTION "Common Sprite Tiles" BANK BANK_AREAENEMY SLOT 2 FREE
-
-Tiles_SPR_Comm:
-    .INCLUDE "SPR_Comm.inc"
-.ENDS
-
-;-------------------------------------------------------------------------------------
-.SECTION "Enemy Sprite Tiles" BANK 6 SLOT 2 FREE
-
-Tiles_SPR_Enemies:
-    .INCLUDE "SPR_Enemies.inc"
-Tiles_SPR_Lakitu:
-    .INCLUDE "SPR_Lakitu.inc"
-
-.ENDS
-
-;-------------------------------------------------------------------------------------
 .SECTION "Animated Background Tiles" BANK BANK_SLOT2 SLOT 2 FREE
 
     .INCLUDE "ANI_Coin.inc"
     .INCLUDE "ANI_Grass.inc"
     .INCLUDE "ANI_Latern.inc"
+    .INCLUDE "ANI_WaterA1.inc"
+    .INCLUDE "ANI_WaterA0.inc"
+    .INCLUDE "ANI_WaterCoin.inc"
+    .INCLUDE "ANI_Lava.inc"
 
 .ENDS
 

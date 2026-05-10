@@ -54,32 +54,32 @@ DrawVine:
     LD (HL), B
     INC L
     LD E, L
-    LD (HL), $48
+    LD (HL), $50
     INC L
     LD (HL), A
     INC L
-    LD (HL), $49
+    LD (HL), $51
     INC L
     LD (HL), B
     INC L
-    LD (HL), $48
+    LD (HL), $50
     INC L
     LD (HL), A
     INC L
-    LD (HL), $49
+    LD (HL), $51
     INC L
     LD (HL), B
     INC L
-    LD (HL), $48
+    LD (HL), $50
     INC L
     LD (HL), A
     INC L
-    LD (HL), $49
+    LD (HL), $51
     LD L, E
 ;
     INC C
     JP NZ, SkpVTop
-    LD (HL), $4A
+    LD (HL), $52
 ;
 SkpVTop:
     DEC L
@@ -239,16 +239,16 @@ FlagpoleGfxHandler:
     LD A, (Enemy_Rel_XPos)          ;get relative horizontal coordinate
     LD (HL), A                      ;store as X coordinate for first sprite
     INC L
-    LD (HL), $47                    ;put triangle shaped tile into first
+    LD (HL), $4F                    ;put triangle shaped tile into first
     ADD A, $08                      ;add eight pixels and store
     INC L
     LD (HL), A                      ;as X coordinate for second sprite
     INC L
-    LD (HL), $46                    ;put skull tile into second sprite
+    LD (HL), $4E                    ;put skull tile into second sprite
     INC L
     LD (HL), A                      ;as X coordinate for third sprite
     INC L
-    LD (HL), $47                    ;put triangle shaped tile into third
+    LD (HL), $4F                    ;put triangle shaped tile into third
     EX DE, HL
 ;
     LD E, (HL)                      ;get sprite data offset for flagpole flag
@@ -1640,35 +1640,42 @@ DrawSmallPlatform:
 ;   X POSITION & TILE
     LD L, <Enemy_SprDataOffset
     LD E, (HL)
+    LD D, >Sprite_Y_Position
     SLA E
     SET 7, E
     LD A, (Enemy_Rel_XPos)
     LD B, $40
     EX DE, HL
+    ; TILE 0
     LD (HL), A
     INC L
     LD (HL), B
     INC L
+    ; TILE 1
     ADD A, $08
     LD (HL), A
     INC L
     LD (HL), B
     INC L
+    ; TILE 2
     ADD A, $08
     LD (HL), A
     INC L
     LD (HL), B
     INC L
+    ; TILE 3
     SUB A, $10
     LD (HL), A
     INC L
     LD (HL), B
     INC L
+    ; TILE 4
     ADD A, $08
     LD (HL), A
     INC L
     LD (HL), B
     INC L
+    ; TILE 5
     ADD A, $08
     LD (HL), A
     INC L
@@ -1682,7 +1689,7 @@ DrawSmallPlatform:
     LD A, (HL)
     CP A, $20
     JP NC, TopSP
-    LD A, YPOS_OFFSCREEN
+    LD A, (YPOS_OFFSCREEN + SMS_PIXELYOFFSET) & 0xFF
 TopSP:
     SUB A, SMS_PIXELYOFFSET
     LD (DE), A
@@ -1690,13 +1697,14 @@ TopSP:
     LD (DE), A
     INC E
     LD (DE), A
+    INC E
     ; SECOND 3
     LD L, <Enemy_Y_Position
     LD A, (HL)
     ADD A, $80
     CP A, $20
     JP NC, BotSP
-    LD A, YPOS_OFFSCREEN
+    LD A, (YPOS_OFFSCREEN + SMS_PIXELYOFFSET) & 0xFF
 BotSP:
     SUB A, SMS_PIXELYOFFSET
     LD (DE), A
@@ -1729,13 +1737,9 @@ BotSP:
     LD (DE), A
 +:
     ; 2ND THREE
-    LD L, <Enemy_SprDataOffset
-    LD E, (HL)
-    INC E
-    INC E
-    INC E
-    INC E
-    INC E
+    LD A, $05
+    ADD A, E
+    LD E, A
     LD A, (Enemy_OffscrBits)
     LD C, A
     LD A, YPOS_OFFSCREEN

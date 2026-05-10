@@ -285,16 +285,54 @@ AnimatedBGTileInits:
     .db StripeCount($04 * $20)
     .dw AnimiatedBGTiles@Latern
     .db $04, $10, $10
+@WaterA1:
+    .dw $3CA0 | VRAMWRITE
+    .db StripeCount($02 * $20)
+    .dw AnimiatedBGTiles@WaterA1
+    .db $08, $10, $10
+@WaterA0:
+    .dw $3CA0 | VRAMWRITE
+    .db StripeCount($02 * $20)
+    .dw AnimiatedBGTiles@WaterA0
+    .db $08, $10, $10
+@WaterCoin:
+    .dw $3D00 | VRAMWRITE
+    .db StripeCount($04 * $20)
+    .dw AnimiatedBGTiles@WaterCoin
+    .db $04, $08, $08
+@Lava:
+    .dw $3D80 | VRAMWRITE
+    .db StripeCount($04 * $20)
+    .dw AnimiatedBGTiles@Lava
+    .db $08, $10, $10
 .ENDS
 
 .SECTION "Animated Background Tile Tables" BANK BANK_SLOT2 SLOT 2 BITWINDOW 8
 AnimiatedBGTiles:
 @Coin:
-    .dw CoinFrame0, CoinFrame1, CoinFrame2, CoinFrame1, $0000
+    .dw CoinFrame0, CoinFrame1, CoinFrame2, CoinFrame1
+    .dw $0000
 @Grass:
-    .dw GrassFrame0, GrassFrame1, GrassFrame2, GrassFrame1, $0000
+    .dw GrassFrame0, GrassFrame1, GrassFrame2, GrassFrame1
+    .dw $0000
 @Latern:
-    .dw LaternFrame0, LaternFrame1, LaternFrame2, LaternFrame1, $0000 
+    .dw LaternFrame0, LaternFrame1, LaternFrame2, LaternFrame1
+    .dw $0000 
+@WaterA1:
+    .dw WaterA1Frame0, WaterA1Frame1, WaterA1Frame2, WaterA1Frame3
+    .dw WaterA1Frame4, WaterA1Frame5, WaterA1Frame6, WaterA1Frame7
+    .dw $0000
+@WaterA0:
+    .dw WaterA0Frame0, WaterA0Frame1, WaterA0Frame2, WaterA0Frame3
+    .dw WaterA0Frame4, WaterA0Frame5, WaterA0Frame6, WaterA0Frame7
+    .dw $0000
+@WaterCoin:
+    .dw WCoinFrame0, WCoinFrame1, WCoinFrame2, WCoinFrame1
+    .dw $0000
+@Lava:
+    .dw LavaFrame0, LavaFrame1, LavaFrame2, LavaFrame3
+    .dw LavaFrame4, LavaFrame5, LavaFrame6, LavaFrame7
+    .dw $0000
 .ENDS
 
 ;   AnimatedBGTileQueue
@@ -3785,19 +3823,19 @@ DrawStarFlag:
     ADD A, $08
     LD (HL), A
     INC L
-    LD (HL), $45
+    LD (HL), $4D
     INC L
     LD (HL), C
     INC L
-    LD (HL), $44
+    LD (HL), $4C
     INC L
     LD (HL), A
     INC L
-    LD (HL), $43
+    LD (HL), $4B
     INC L
     LD (HL), C
     INC L
-    LD (HL), $42
+    LD (HL), $4A
     EX DE, HL
     RET
 
@@ -4387,9 +4425,8 @@ MoveLargeLiftPlat:
     JP ChkYPCollision                           ;branch to position player correctly
 
 MoveSmallPlatform:
-    ;CALL MoveLiftPlatforms                      ;execute common to all large and small lift platforms
-    ;JP ChkSmallPlatCollision
-    ; FALL THROUGH
+    CALL MoveLiftPlatforms                      ;execute common to all large and small lift platforms
+    JP ChkSmallPlatCollision
 
 MoveLiftPlatforms:
     LD A, (TimerControl)                        ;if master timer control set, skip all of this
