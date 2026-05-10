@@ -1250,18 +1250,30 @@ ChkBowserF:
 ;--------------------------------
 
 .SECTION "Loop Command Data" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
-LoopCmdWorldNumber:
-    .db $03, $03, $06, $06, $06, $06, $06, $06, $07, $07, $07
+; LoopCmdWorldNumber:
+;     .db $03, $03, $06, $06, $06, $06, $06, $06, $07, $07, $07
 
-LoopCmdPageNumber:
-    .db $05, $09, $04, $05, $06, $08, $09, $0a, $06, $0b, $10
+; LoopCmdPageNumber:
+;     .db $05, $09, $04, $05, $06, $08, $09, $0a, $06, $0b, $10
 
-LoopCmdYPosition:
-    .db $40, $b0, $b0, $80, $40, $40, $80, $40, $f0, $f0, $f0
-    ;.db $28, $98, $98, $68, $28, $28, $68, $28, $D8, $D8, $D8
+; LoopCmdYPosition:
+;     .db $40, $b0, $b0, $80, $40, $40, $80, $40, $f0, $f0, $f0
 
-AreaDataOfsLoopback:
-    .db $12, $36, $0e, $0e, $0e, $32, $32, $32, $0a, $26, $40
+; AreaDataOfsLoopback:
+;     .db $12, $36, $0e, $0e, $0e, $32, $32, $32, $0a, $26, $40
+
+LoopCmdData:
+    .db $12, $40, $05, $03
+    .db $36, $B0, $09, $03
+    .db $0E, $B0, $04, $06
+    .db $0E, $80, $05, $06
+    .db $0E, $40, $06, $06
+    .db $32, $40, $08, $06
+    .db $32, $80, $09, $06
+    .db $32, $40, $0A, $06
+    .db $0A, $F0, $06, $07
+    .db $26, $F0, $0B, $07
+    .db $40, $F0, $10, $07
 .ENDS
 
 ExecGameLoopback:
@@ -1290,10 +1302,8 @@ ExecGameLoopback:
     LD (AreaObjectPageSel), A
     LD (EnemyDataOffset), A         ;initialize enemy object data offset
     LD (EnemyObjectPageLoc), A      ;and enemy object page control
-;
-    LD A, $0B
-    addAToDE8_M
-    LD A, (DE)                      ;adjust area object offset based on
+;                   
+    LD A, E                         ;adjust area object offset based on
     LD (AreaDataOffset), A          ;which loop command we encountered
     RET
 
@@ -1306,58 +1316,52 @@ ProcLoopCommand:
     OR A
     JP NZ, ChkEnemyFrenzy           ;if not, do not loop yet
 ;
-    LD DE, LoopCmdPageNumber + $0B  ;start at the end of each set of loop data
-    EX DE, HL
-    LD B, $0C
+    PUSH HL                         ;save object offset
+    LD HL, LoopCmdData + $2C        ;start at the end of each set of loop data
 FindLoop:
     DEC L
-    DJNZ ChkEnemyFrenzy_EX          ;if all data is checked and not match, do not loop
-    LD A, $F5
-    addAToHL8_M                     ;LoopCmdWorldNumber
+    LD B, (HL)                      ;store world number in B
+    DEC L
+    LD C, (HL)                      ;store page number in C
+    DEC L
+    LD D, (HL)                      ;store y position in D
+    DEC L
+    LD E, (HL)                      ;store area data offset in E
+    LD A, L
+    CP A, <LoopCmdData - $04        ;if all data is checked and not match, do not loop
+    JP Z, ChkEnemyFrenzy_POP
     LD A, (WorldNumber)             ;check to see if one of the world numbers
-    CP A, (HL)                      ;matches our current world number
+    CP A, B                         ;matches our current world number
     JP NZ, FindLoop
-    LD A, $0B
-    addAToHL8_M                     ;LoopCmdPageNumber
     LD A, (CurrentPageLoc)          ;check to see if one of the page numbers
-    CP A, (HL)                      ;matches the page we're currently on
+    CP A, C                         ;matches the page we're currently on
     JP NZ, FindLoop
-;
-    LD A, $0B
-    addAToHL8_M                     ;LoopCmdYPosition
+    LD HL, MultiLoopCorrectCntr
     LD A, (Player_Y_Position)       ;check to see if the player is at the correct position
-    CP A, (HL)                      ;if not, branch to check for world 7
+    CP A, D                         ;if not, branch to check for world 7
     JP NZ, WrongChk
-;
     LD A, (Player_State)            ;check to see if the player is
     OR A                            ;on solid ground (i.e. not jumping or falling)
     JP NZ, WrongChk                 ;if not, player fails to pass loop, and loopback
-;
-    EX DE, HL
     LD A, (WorldNumber)             ;are we in world 7? (check performed on correct
     CP A, WORLD7                    ;vertical position and on solid ground)
-    JP NZ, InitMLp                  ;if not, initialize flags used there, otherwise
-;
-    LD A, (MultiLoopCorrectCntr)    ;increment counter for correct progression
-    INC A
-    LD (MultiLoopCorrectCntr), A
+    JP NZ, InitMLp                  ;if not, initialize flags used there, otherwise   
+    INC (HL)                        ;increment counter for correct progression
 IncMLoop:
-    LD A, (MultiLoopPassCntr)       ;increment master multi-part counter
-    INC A
-    LD (MultiLoopPassCntr), A
-    CP A, $03                       ;have we done all three parts?
+    INC L                           ;MultiLoopPassCntr
+    INC (HL)                        ;increment master multi-part counter
+    LD A, (HL)                      ;have we done all three parts?
+    CP A, $03
     JP NZ, InitLCmd                 ;if not, skip this part
-    LD A, (MultiLoopCorrectCntr)    ;if so, have we done them all correctly?
+    DEC L                           ;MultiLoopCorrectCntr
+    LD A, (HL)                      ;if so, have we done them all correctly?
     CP A, $03
     JP Z, InitMLp                   ;if so, branch past unnecessary check here
     JP DoLpBack                     ;unconditional branch if previous branch fails
-;
 WrongChk:
-    EX DE, HL
     LD A, (WorldNumber)             ;are we in world 7? (check performed on
     CP A, WORLD7                    ;incorrect vertical position or not on solid ground)
     JP Z, IncMLoop
-;
 DoLpBack:
     CALL ExecGameLoopback           ;if player is not in right place, loop back
     CALL KillAllEnemies
@@ -1368,12 +1372,13 @@ InitMLp:
 InitLCmd:
     XOR A                           ;initialize loop command flag
     LD (LoopCommand), A
-    JP ChkEnemyFrenzy
+    ; FALL THROUGH
+
 
 ;--------------------------------
 
-ChkEnemyFrenzy_EX:
-    EX DE, HL
+ChkEnemyFrenzy_POP:
+    POP HL
 ChkEnemyFrenzy:
     LD A, (EnemyFrenzyQueue)        ;check for enemy object in frenzy queue
     OR A
