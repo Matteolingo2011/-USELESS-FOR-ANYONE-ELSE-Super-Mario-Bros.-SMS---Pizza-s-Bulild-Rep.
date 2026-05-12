@@ -15,15 +15,15 @@
     Whirlpool_Offset:               .dsb $01 ; Cannon_Offset
     Cannon_Offset:                  dsb $01
     ; $0D
-    AreaObjOffsetBuffer:            dsb $01 ; [$03]
-    AreaObjectLength:               dsb $01 ; [$03]
-    MushroomLedgeHalfLen:           dsb $01 ; [$03]
+    AreaObjOffsetBuffer:            dsb $01 ; [$04]
+    AreaObjectLength:               dsb $01 ; [$04]
+    MushroomLedgeHalfLen:           dsb $01 ; [$04]
     ; $10
     VineObjOffset:                  dsb $01 ; [$02]
     VineFlagOffset:                 dsb $01
     VineHeight:                     dsb $01
     ;VineStart_Y_Position:           dsb $01
-    TreeLedgeLength:                dsb $01
+    TreeLedgeLength:                dsb $01 ; [$04]
     ; $14
     SprShuffleAmt:                  dsb $01 ; [$03]
     BalPlatformAlignment:           dsb $01
@@ -112,7 +112,7 @@
     VineObjOffset_01:               dsb $01 ; VineObjOffset[1]
     BowserHitPoints:                dsb $01
     StompChainCounter:              dsb $01
-    .                               dsb $01 ; TreeLedgeLength[1]
+    TreeLedgeLength_01:             dsb $01 ; TreeLedgeLength[1]
     ; $14
     SprShuffleAmt_01:               dsb $01 ; SprShuffleAmt[1]
     FirebarSpinSpeed:               dsb $01 ; [6]
@@ -198,13 +198,13 @@
     EnemyOffscrBitsMasked_01:       dsb $01 ; [6]
     Temp_Bytes:                     dsb $0C ; $00 - $07, $EB - $EF
     ; $0D
-    .                               dsb $01 ; AreaObjOffsetBuffer[02]
-    .                               dsb $01 ; AreaObjectLength[02]
-    .                               dsb $01 ; MushroomLedgeHalfLen[02]
+    AreaObjOffsetBuffer_02:         dsb $01 ; AreaObjOffsetBuffer[02]
+    AreaObjectLength_02:            dsb $01 ; AreaObjectLength[02]
+    MushroomLedgeHalfLen_02:        dsb $01 ; MushroomLedgeHalfLen[02]
     ; $10
     .                               dsb $02 ; UNUSED
     VineStart_Y_Position:           dsb $01
-    .                               dsb $01 ; TreeLedgeLength[02]
+    TreeLedgeLength_02:             dsb $01 ; TreeLedgeLength[02]
     ; $14
     SprShuffleAmt_02:               dsb $01 ; SprShuffleAmt[2]
     FirebarSpinSpeed_01:            dsb $01
@@ -247,11 +247,12 @@
     EnemyOffscrBitsMasked_02:       dsb $01 ; [6]
     .                               dsb $0C ; UNUSED
     ; $0D
-    AreaObjOffsetBuffer_02:         dsb $01 ; AreaObjOffsetBuffer[02]
-    AreaObjectLength_02:            dsb $01 ; AreaObjectLength[02]
-    MushroomLedgeHalfLen_02:        dsb $01 ; MushroomLedgeHalfLen[02]
+    AreaObjOffsetBuffer_03:         dsb $01 ; AreaObjOffsetBuffer[03]
+    AreaObjectLength_03:            dsb $01 ; AreaObjectLength[03]
+    MushroomLedgeHalfLen_03:        dsb $01 ; MushroomLedgeHalfLen[03]
     ; $10
-    .                               dsb $04 ; UNUSED
+    .                               dsb $03 ; UNUSED
+    TreeLedgeLength_03:             dsb $01 ; TreeLedgeLength[03]
     ; $14
     .                               dsb $01 ; UNUSED
     FirebarSpinSpeed_02:            dsb $01

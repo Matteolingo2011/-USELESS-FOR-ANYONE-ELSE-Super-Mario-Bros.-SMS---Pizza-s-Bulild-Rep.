@@ -47,6 +47,10 @@ InitializeArea:
     DEC (HL)
     INC H
     DEC (HL)
+    
+    INC H
+    DEC (HL)
+
     LD A, $2E   ; $2F
     ;LD A, $20                       ;"ColumnSets" is now more like the amount of columns drawn to the screen in tiles (NOT METATILES)
     ;LD A, $0B                       ;set value for renderer to update 12 column sets
@@ -1265,12 +1269,14 @@ ChkBowserF:
 LoopCmdData:
     .db $12, $40, $05, $03
     .db $36, $B0, $09, $03
+
     .db $0E, $B0, $04, $06
     .db $0E, $80, $05, $06
     .db $0E, $40, $06, $06
     .db $32, $40, $08, $06
     .db $32, $80, $09, $06
     .db $32, $40, $0A, $06
+
     .db $0A, $F0, $06, $07
     .db $26, $F0, $0B, $07
     .db $40, $F0, $10, $07

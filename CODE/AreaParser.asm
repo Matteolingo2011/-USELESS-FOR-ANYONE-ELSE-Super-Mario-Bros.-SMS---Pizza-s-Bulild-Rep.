@@ -149,9 +149,7 @@ ForeSceneryData:
 .SECTION "Terrain Metatile Data" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 ;   BLOCK FOR AREATYPE (WATER,OVERWORLD,UNDERGROUND,CASTLE)
 TerrainMetatiles:
-    .db MT_SOLIDBLK_WATER, MT_ROCK, MT_BRICK, MT_SOLIDBLK_WHITE
-; TerrainMetatilesPriority:
-;     .db MT_SOLIDBLK_WATER, MT_ROCK_PRI, MT_BRICK, MT_SOLIDBLK_WHITE
+    .db MT_SOLIDBLK_WATER, MT_ROCK, MT_BRICK, MT_CASTLECEILING_L;MT_SOLIDBLK_WHITE
 .ENDS
 
 .SECTION "Terrain Render Data" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
@@ -296,13 +294,25 @@ NoFore:
     DJNZ SceLoop2                   ;store up to end of metatile buffer
 ;   FLOOR TERRAIN
 RendTerr:
-    LD A, (AreaType)                ;check world type for water level
+    LD A, (CurrentColumnPos)        ;set flag for castle ceiling tile
+    AND A, $01
+    LD IYH, A
+    ;
+    LD IYL, $00                     ;flag to render castle ceiling and floor
+    LD A, (AreaType)
+    CP A, $03
+    JP NZ, +
+    LD IYL, $01                     ;render castle ceiling
++:
+    ;LD A, (AreaType)                ;check world type for water level
     OR A
     JP NZ, TerMTile                 ;if not water level, skip this part
     LD A, (WorldNumber)             ;check world number, if not world number eight
     CP A, WORLD8                    ;then skip this part
     JP NZ, TerMTile
-    LD A, MT_SOLIDBLK_WHITE         ;if set as water level and world number eight,
+    ;LD A, MT_SOLIDBLK_WHITE         ;if set as water level and world number eight,
+    LD A, MT_CASTLECEILING_L
+    LD IYL, $01
     JP StoreMT                      ;use castle wall metatile as terrain type
 TerMTile:
     LD A, (CloudTypeOverride)       ;check for cloud type override
@@ -336,9 +346,39 @@ NoCloud2:
     LD B, $08                       ;start at beginning of bitmasks
 TerrBChk:
     RR C                            ;rotate byte and check if carry occured
-    JP NC, NextTBit                 ;if not set, skip this part (do not write terrain to buffer)
+    JP C, RenderBit                 ;if not set, skip this part (do not write terrain to buffer)
+    LD A, IYL                       ;
+    DEC A
+    JP NZ, NextTBit
+    INC IYL                         ;set flag to render castle floor
+    JP NextTBit
+RenderBit:
+    LD A, IYL                       ;check if rendering castle floor top
+    CP A, $02
+    JP NZ, +                        ;if not, skip
+    LD IXH, MT_CASTLEFLOOR_TOP      ;set metatile to castle floor top
++:
+    ;
     LD A, IXH
     LD (DE), A                      ;load terrain type metatile number and store into buffer here
+    ;
+    LD A, IYL                       ;check if doing castle ceiling/floor rendering
+    OR A
+    JP Z, NextTBit                  ;if not, skip
+    ;
+    CP A, $02                       ;check if rendering if castle floor top
+    JP NZ, +                        ;if not, skip
+    LD IYL, $00                     ;disable castle ceiling/floor processing
+    INC IXH                         ;set metatile to castle floor bottom
+    JP NextTBit                     ;do next terrain bit
+    ;
++:
+    LD A, IYH                       ;check if we need to render right castle ceiling tile               
+    AND A, $01
+    JP NZ, NextTBit                 ;if not, skip
+    LD A, IXH
+    INC A
+    LD (DE), A
 NextTBit:
     INC E                           ;continue until end of buffer
     INC IXL
@@ -353,6 +393,7 @@ NextTBit:
     JP NZ, EndUChk                  ;if we're at the bottom of the screen, override
     LD IXH, MT_ROCK                 ;old terrain type with ground level terrain type
 EndUChk:
+    INC IYH                         ;toggle castle ceiling tile flag
     DJNZ TerrBChk                   ;if not all bits checked, loop back
     INC HL
     JP TerrLoop                     ;unconditional branch, use Y to load next byte
@@ -442,7 +483,7 @@ BlockBuffLowBounds:
 
 
 ProcessAreaData:
-    LD HL, AreaObjectLength + ($02 * $100)  ;start at the end of area object buffer
+    LD HL, AreaObjectLength_03              ;start at the end of area object buffer
 ProcADLoop:
     LD (ObjectOffset), HL
     XOR A                                   ;reset flag
@@ -453,7 +494,7 @@ ProcADLoop:
     LD E, A
     LD A, (DE)                              ;get first byte of area object
     ; Check for end-of-area marker
-    CP A, $FD                               ;if end-of-area, skip all this crap
+    CP A, $D0                               ;if end-of-area, skip all this crap
     JP Z, RdyDecode
     ; Check if this buffer slot is already in use
     LD A, (HL)                              ;check area object buffer flag
@@ -470,7 +511,6 @@ ProcADLoop:
     PUSH HL
     LD HL, AreaObjectPageSel
     LD (HL), $01                            ;if not already set, set it now
-    ;INC (HL)                                
     DEC L                                   ;AreaObjectPageLoc
     INC (HL)                                ;and increment page location
     POP HL
@@ -531,6 +571,7 @@ ProcLoopb:
     DEC H                                   ;decrement buffer offset                                      
     BIT 6, H
     JP NZ, ProcADLoop                       ;and loopback unless exceeded buffer
+;
     LD A, (BehindAreaParserFlag)            ;check for flag set if objects were behind renderer
     OR A
     JP NZ, ProcessAreaData                  ;branch if true to load more level data, otherwise
@@ -567,7 +608,7 @@ DecodeAreaData:
 Chk1stB:
 ;   Check for end of level
     LD A, (DE)                              ;get first byte of level object again
-    CP A, $FD
+    CP A, $D0
     RET Z                                   ;if end of level, leave this routine
 ;   Extract row from low nybble
     AND A, $0F                              ;otherwise, mask out low nybble
@@ -586,7 +627,7 @@ ChkRow14:
     CP A, $0E                               ;row 14?
     JP NZ, ChkRow13 
     LD IXH, $00                             ;if so, load offset with $00
-    LD A, $2E                               ;and load A with another value
+    LD A, $45 ;LD A, $2E                               ;and load A with another value
     JP NormObj                              ;unconditional branch
 ChkRow13:
     CP A, $0D                               ;row 13?
@@ -746,7 +787,7 @@ RunAObj:
     .dw EmptyBlock
     .dw Jumpspring
 
-;objects for special row $0d or 13 (d6 set)
+;objects for special row $0d or 13 (d6 set) [$22]
     .dw IntroPipe
     .dw FlagpoleObject
     .dw AxeObj
@@ -759,14 +800,248 @@ RunAObj:
     .dw AreaFrenzy            ;bullet bills or swimming cheep-cheeps
     .dw AreaFrenzy            ;stop frenzy
     .dw LoopCmdE
+    .dw CastleCeilingTileY00    ; $0C
+    .dw CastleCeilingTileY01
+    .dw CastleCeilingTileY02
+    .dw CastleCeilingTileY03
+    .dw CastleStairsY05
+    .dw CastleStairsY06
+    .dw CastleStairsY07
+    .dw CastleFloorLeftWallY07  ; $13
+    .dw CastleFloorLeftY07
+    .dw CastleFloorRightWallY07
+    .dw CastleFloorRightY07
+    .dw CastleFloorLeftWallY08  ; $17
+    .dw CastleFloorLeftY08
+    .dw CastleFloorRightWallY08
+    .dw CastleFloorRightY08
+    .dw CastleFloorLeftWallY09  ; $1B
+    .dw CastleFloorLeftY09
+    .dw CastleFloorRightWallY09
+    .dw CastleFloorRightY09
+    .dw CastleFloorLeftWallY0A  ; $1F
+    .dw CastleFloorLeftY0A
+    .dw CastleFloorRightWallY0A
+    .dw CastleFloorRightY0A
 
-;object for special row $0e or 14
+;object for special row $0e or 14           [$45]
     .dw AlterAreaAttributes     
 
 ;-------------------------------------------------------------------------------------
 ;(these apply to all area object subroutines in this section unless otherwise stated)
 ;$00(IXL) - used to store offset used to find object code
 ;$07(IXH) - starts with adder from area parser, used to store row offset
+
+CastleCeilingTileY00:
+    LD HL, MetatileBuffer
+    JP CastleCeilingTileMain
+
+CastleCeilingTileY01:
+    LD HL, MetatileBuffer + $01
+    JP CastleCeilingTileMain
+
+CastleCeilingTileY02:
+    LD HL, MetatileBuffer + $02
+    JP CastleCeilingTileMain
+
+CastleCeilingTileY03:
+    LD HL, MetatileBuffer + $03
+    ; FALL THROUGH
+
+CastleCeilingTileMain:
+    LD B, $06   ; metatile buffer length / 2
+    LD (HL), MT_CASTLECEILING_S
+-:
+    INC L
+    INC L
+    LD A, (HL)
+    CP A, MT_CASTLECEILING_L
+    JP Z, ReplaceWithSingle
+    CP A, MT_CASTLECEILING_R
+    RET NZ
+ReplaceWithSingle:
+    LD (HL), MT_CASTLECEILING_S
+    DJNZ -
+    RET
+
+;--------------------------------
+
+CastleStairsY05:
+    LD C, $02
+    LD DE, MetatileBuffer + $05
+    JP CastleStairsMain
+
+CastleStairsY06:
+    LD C, $03
+    LD DE, MetatileBuffer + $06
+    JP CastleStairsMain
+
+CastleStairsY07:
+    LD C, $04
+    LD DE, MetatileBuffer + $07
+    ; FALL THROUGH
+
+CastleStairsMain:
+    CALL ChkLrgObjFixedLength
+    EX DE, HL
+    JP NZ, +
+    LD (HL), MT_CASTLESTAIRS_END
+    INC L
+    LD A, (HL)
+    OR A
+    JP NZ, RenderUnderStairs
+    LD (HL), MT_CASTLESTAIRS_ENDL
+    INC L
+    JP RenderUnderStairs
++:
+    LD A, (HL)
+    OR A
+    JP NZ, RenderUnderStairs
+    LD (HL), MT_CASTLESTAIRS_TOP
+
+RenderUnderStairs:
+    LD B, $03
+-:
+    LD A, (HL)
+    OR A
+    JP NZ, +
+    LD (HL), MT_CASTLESTAIRS_BOT
++:
+    INC L
+    DJNZ -
+    RET
+
+;--------------------------------
+
+CastleFloorLeftWallY07:
+    LD HL, MetatileBuffer + $07
+    LD B, $04
+    JP CastleFloorLeftWallMain
+
+CastleFloorLeftWallY08:
+    LD HL, MetatileBuffer + $08
+    LD B, $03
+    JP CastleFloorLeftWallMain
+
+CastleFloorLeftWallY09:
+    LD HL, MetatileBuffer + $09
+    LD B, $02
+    JP CastleFloorLeftWallMain
+
+CastleFloorLeftWallY0A:
+    LD HL, MetatileBuffer + $0A
+    LD B, $01
+    ; FALL THROUGH
+
+CastleFloorLeftWallMain:
+    LD (HL), MT_CASTLEFLOOR_LTOP
+    INC L
+-:
+    LD A, (HL)
+    CP A, MT_CASTLEFLOOR_LBOT
+    RET Z
+    LD (HL), MT_CASTLEFLOOR_LBOT
+    INC L
+    DJNZ -
+    RET
+
+;--------------------------------
+
+CastleFloorLeftY07:
+    LD HL, MetatileBuffer + $07
+    JP CastleFloorLeftMain
+
+CastleFloorLeftY08:
+    LD HL, MetatileBuffer + $08
+    JP CastleFloorLeftMain
+
+CastleFloorLeftY09:
+    LD HL, MetatileBuffer + $09
+    JP CastleFloorLeftMain
+
+CastleFloorLeftY0A:
+    LD HL, MetatileBuffer + $0A
+    ; FALL THROUGH
+
+CastleFloorLeftMain:
+    LD A, (HL)
+    CP A, MT_CASTLEFLOOR_TOP
+    LD A, MT_CASTLEFLOOR_LTOP
+    JP Z, +
+    LD A, MT_CASTLEFLOOR_LBOT
++:
+    LD (HL), A
+    ;
+    INC L
+    LD (HL), MT_CASTLEFLOOR_LCORNER
+    RET
+
+;--------------------------------
+
+CastleFloorRightWallY07:
+    LD HL, MetatileBuffer + $07
+    LD B, $04
+    JP CastleFloorRightWallMain
+
+CastleFloorRightWallY08:
+    LD HL, MetatileBuffer + $08
+    LD B, $03
+    JP CastleFloorRightWallMain
+
+CastleFloorRightWallY09:
+    LD HL, MetatileBuffer + $09
+    LD B, $02
+    JP CastleFloorRightWallMain
+
+CastleFloorRightWallY0A:
+    LD HL, MetatileBuffer + $0A
+    LD B, $01
+    ; FALL THROUGH
+
+CastleFloorRightWallMain:
+    LD (HL), MT_CASTLEFLOOR_RTOP
+    INC L
+-:
+    LD A, (HL)
+    CP A, MT_CASTLEFLOOR_RBOT
+    RET Z
+    LD (HL), MT_CASTLEFLOOR_RBOT
+    INC L
+    DJNZ -
+    RET
+
+;--------------------------------
+
+CastleFloorRightY07:
+    LD HL, MetatileBuffer + $07
+    JP CastleFloorRightMain
+
+CastleFloorRightY08:
+    LD HL, MetatileBuffer + $08
+    JP CastleFloorRightMain
+
+CastleFloorRightY09:
+    LD HL, MetatileBuffer + $09
+    JP CastleFloorRightMain
+
+CastleFloorRightY0A:
+    LD HL, MetatileBuffer + $0A
+    ; FALL THROUGH
+
+CastleFloorRightMain:
+    LD A, (HL)
+    CP A, MT_CASTLEFLOOR_TOP
+    LD A, MT_CASTLEFLOOR_RTOP
+    JP Z, +
+    LD A, MT_CASTLEFLOOR_RBOT
++:
+    LD (HL), A
+    ;
+    INC L
+    LD (HL), MT_CASTLEFLOOR_RCORNER
+    RET
+
+;--------------------------------
 
 AlterAreaAttributes:
     LD HL, (ObjectOffset)

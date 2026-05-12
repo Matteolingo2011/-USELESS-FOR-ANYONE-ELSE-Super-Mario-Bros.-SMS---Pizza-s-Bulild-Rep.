@@ -1846,8 +1846,25 @@ Palette0_MTiles:
     .dw $01CC, $01CD, $01CE, $01CF
     ; Blank for bricks/blocks that are hit
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
-    ; Sand
-    .dw $0194, $0195, $0196, $0197
+    ; All-Stars Castle MTs
+    .dw $01C8, $01C9, $01CA, $01CB                                          ; ceiling left
+    .dw $01CC, $01CD, $01CE, $01CF                                          ; ceiling right
+    .dw $01C8, $01C9, $01CE, $01CF                                          ; ceiling single
+    .dw $01B4, $01B5, $01B6, $01B7                                          ; floor top
+    .dw $01C0, $01BF, $01BC, $01BD                                          ; floor bottom
+
+    .dw $01B8, $01B9, $01B6, $01B7                                          ; floor left top corner
+    .dw $01BA, $01BB, $01BC, $01BD                                          ; floor left side
+    .dw $01BE, $01BF, $01BC, $01BD                                          ; floor left bot corner
+
+    .dw $01B4, $01B5, $01C1, $01C2                                          ; floor right top corner
+    .dw $01C0, $01BF, $01C2, $01C2                                          ; floor right side
+    .dw $01C0, $01BF, $01C3, $01BD                                          ; floor right bot corner
+
+    .dw $01D0, $01D1, $01D2, $01D3                                          ; stairs end
+    .dw $01D4, $01D5, $01D6, $01D7                                          ; stairs end low
+    .dw $01D0, $01D1, $01D0, $01D1                                          ; stairs top
+    .dw $01D4, $01D5, $01D5, $01D4                                          ; stairs bottom
     ; --- CLIMBABLE METATILES START HERE ---
     ; Flagpole
     .dw BLANKTILE, BG_MACRO($017C), BLANKTILE, BG_MACRO($017D)              ; ball

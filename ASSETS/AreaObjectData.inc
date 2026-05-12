@@ -1,24 +1,97 @@
+; 0x6B, 0xAB, 0xB5, 0xD0, 0xFD
+
 ;level 1-4/6-4
 L_CastleArea1:
     .db $9b, $07
-    .db $05, $32, $06, $33, $07, $34, $ce, $03, $dc, $51
-    .db $ee, $07, $73, $e0, $74, $0a, $7e, $06, $9e, $0a
-    .db $ce, $06, $e4, $00, $e8, $0a, $fe, $0a, $2e, $89
-    .db $4e, $0b, $54, $0a, $14, $8a, $c4, $0a, $34, $8a
-    .db $7e, $06, $c7, $0a, $01, $e0, $02, $0a, $47, $0a
-    .db $81, $60, $82, $0a, $c7, $0a, $0e, $87, $7e, $02
-    .db $a7, $02, $b3, $02, $d7, $02, $e3, $02, $07, $82
-    .db $13, $02, $3e, $06, $7e, $02, $ae, $07, $fe, $0a
-    .db $0d, $c4, $cd, $43, $ce, $09, $de, $0b, $dd, $42
-    .db $fe, $02, $5d, $c7
-    .db $fd
 
-; ---
+    .db $0D, $50 ;$05, $32
+    .db $0D, $51 ;$06, $33
+    .db $0D, $52 ;$07, $34
+    
+    .db $CD, $59 ; right floor wall @ Y08
+    .db $ce, $03
+    .db $dc, $51
+    .db $ee, $07
+    .db $FD, $57 ; left floor wall @ Y08
+
+    .db $7D, $CF ;$73, $e0
+    .db $7D, $4E ; ceiling tile @ Y02 !!!
+
+    .db $74, $0a, $7e, $06, $9e, $0a
+
+    .db $9D, $59 ; right floor wall @ Y08
+
+    .db $ce, $06
+
+    .db $DD, $57 ; left floor wall @ Y08
+
+    .db $e4, $00, $e8, $0a, $fe, $0a
+
+    .db $FD, $59 ; right floor wall @ Y08
+    
+    .db $2e, $89
+
+    .db $3D, $53 ; left floor wall @ Y07
+
+    .db $4e, $0b, $54, $0a
+
+    .db $5D, $4D ; ceiling tile @ Y01
+    
+    .db $14, $8a, $c4, $0a, $34, $8a
+
+    .db $7D, $4E ; ceiling tile @ Y02
+    .db $7D, $56 ; right floor @ Y07
+
+    .db $7e, $06, $c7, $0a
+    
+    .db $0D, $CD ;$01, $e0
+    .db $02, $0a, $47, $0a
+    .db $8D, $4D ;$81, $60
+    .db $82, $0a, $c7, $0a, $0e, $87
+
+    .db $1D, $4D ; ceiling tile @ Y01
+    .db $7D, $4E ; ceiling tile @ Y02 !!!
+    .db $7D, $62 ; right floor @ Y0A
+    .db $7D, $59 ; right floor wall @ Y08
+    
+    .db $7e, $02
+    .db $a7, $02, $b3, $02, $d7, $02, $e3, $02, $07, $82
+    .db $13, $02, $3e, $06
+
+    .db $4D, $60 ; left floor @ Y0A
+    .db $4D, $57 ; left floor wall @ Y08
+    .db $7D, $62 ; right floor @ Y0A
+    .db $7D, $59 ; right floor wall @Y08
+    
+    .db $7e, $02, $ae, $07
+    
+    .db $BD, $4D ; ceiling tile @ Y01
+    .db $BD, $60 ; left floor @ Y0A
+    .db $BD, $57 ; left floor wall @ Y08
+    .db $FD, $4E ; ceiling tile @ Y02
+    .db $FD, $59 ; right floor wall @Y08
+
+    .db $fe, $0a
+    .db $0d, $c4, $cd, $43, $ce, $09, $de, $0b, $dd, $42
+
+    .db $DD, $53 ; left floor wall @ Y07
+    .db $ED, $4E ; ceiling tile @ Y02
+    .db $FD, $4E ; ceiling tile @ Y02 !!!
+    .db $FD, $62 ; right floor @ Y0A
+    .db $FD, $55 ; right floor wall @ Y07
+
+    .db $fe, $02, $5d, $c7
+    .db $D0
 
 ;level 4-4
 L_CastleArea2:
     .db $5b, $07
-    .db $05, $32, $06, $33, $07, $34, $5e, $0a, $68, $64
+
+    .db $0D, $50;$05, $32
+    .db $0D, $51;$06, $33
+    .db $0D, $52;$07, $34
+    
+    .db $5e, $0a, $68, $64
     .db $98, $64, $a8, $64, $ce, $06, $fe, $02, $0d, $01
     .db $1e, $0e, $7e, $02, $94, $63, $b4, $63, $d4, $63
     .db $f4, $63, $14, $e3, $2e, $0e, $5e, $02, $64, $35
@@ -31,12 +104,17 @@ L_CastleArea2:
     .db $2e, $01, $7e, $06, $be, $02, $de, $06, $fe, $0a
     .db $0d, $c4, $cd, $43, $ce, $09, $de, $0b, $dd, $42
     .db $fe, $02, $5d, $c7
-    .db $fd
+    .db $D0
 
 ;level 2-4/5-4
 L_CastleArea3:
     .db $9b, $07
-    .db $05, $32, $06, $33, $07, $34, $fe, $00, $27, $b1
+
+    .db $0D, $50;$05, $32
+    .db $0D, $51;$06, $33
+    .db $0D, $52;$07, $34
+    
+    .db $fe, $00, $27, $b1
     .db $65, $32, $75, $0a, $71, $00, $b7, $31, $08, $e4
     .db $18, $64, $1e, $04, $57, $3b, $bb, $0a, $17, $8a
     .db $27, $3a, $73, $0a, $7b, $0a, $d7, $0a, $e7, $3a
@@ -48,14 +126,18 @@ L_CastleArea3:
     .db $be, $03, $de, $07, $fe, $0a, $03, $a5, $0d, $44
     .db $cd, $43, $ce, $09, $dd, $42, $de, $0b, $fe, $02
     .db $5d, $c7
-    .db $fd
+    .db $D0
 
-; ---
 
 ;level 3-4
 L_CastleArea4:
     .db $9b, $07
-    .db $05, $32, $06, $33, $07, $34, $fe, $06, $0c, $81
+
+    .db $0D, $50;$05, $32
+    .db $0D, $51;$06, $33
+    .db $0D, $52;$07, $34
+    
+    .db $fe, $06, $0c, $81
     .db $39, $0a, $5c, $01, $89, $0a, $ac, $01, $d9, $0a
     .db $fc, $01, $2e, $83, $a7, $01, $b7, $00, $c7, $01
     .db $de, $0a, $fe, $02, $4e, $83, $5a, $32, $63, $0a
@@ -66,12 +148,17 @@ L_CastleArea4:
     .db $ee, $07, $3e, $83, $5e, $07, $fe, $0a, $0d, $c4
     .db $41, $52, $51, $52, $cd, $43, $ce, $09, $de, $0b
     .db $dd, $42, $fe, $02, $5d, $c7
-    .db $fd
+    .db $D0
 
 ;level 7-4
 L_CastleArea5:
     .db $5b, $07
-    .db $05, $32, $06, $33, $07, $34, $fe, $0a, $ae, $86
+
+    .db $0D, $50;$05, $32
+    .db $0D, $51;$06, $33
+    .db $0D, $52;$07, $34
+    
+    .db $fe, $0a, $ae, $86
     .db $be, $07, $fe, $02, $0d, $02, $27, $32, $46, $61
     .db $55, $62, $5e, $0e, $1e, $82, $68, $3c, $74, $3a
     .db $7d, $4b, $5e, $8e, $7d, $4b, $7e, $82, $84, $62
@@ -85,14 +172,18 @@ L_CastleArea5:
     .db $1e, $86, $3e, $02, $5e, $06, $7e, $02, $9e, $06
     .db $fe, $0a, $0d, $c4, $cd, $43, $ce, $09, $de, $0b
     .db $dd, $42, $fe, $02, $5d, $c7
-    .db $fd
+    .db $D0
 
-; ---
 
 ;level 8-4
 L_CastleArea6:
     .db $5b, $06
-    .db $05, $32, $06, $33, $07, $34, $5e, $0a, $ae, $02
+
+    .db $0D, $50;$05, $32
+    .db $0D, $51;$06, $33
+    .db $0D, $52;$07, $34
+    
+    .db $5e, $0a, $ae, $02
     .db $0d, $01, $39, $73, $0d, $03, $39, $7b, $4d, $4b
     .db $de, $06, $1e, $8a, $ae, $06, $c4, $33, $16, $fe
     .db $a5, $77, $fe, $02, $fe, $82, $0d, $07, $39, $73
@@ -103,7 +194,9 @@ L_CastleArea6:
     .db $46, $7e, $ad, $4a, $fe, $82, $39, $f3, $a9, $7b
     .db $4e, $8a, $9e, $07, $fe, $0a, $0d, $c4, $cd, $43
     .db $ce, $09, $de, $0b, $dd, $42, $fe, $02, $5d, $c7
-    .db $fd
+    .db $D0
+
+; ---
 
 ;level 3-3
 L_GroundArea1:
@@ -118,7 +211,7 @@ L_GroundArea1:
     .db $b9, $14, $c5, $12, $c8, $40, $d4, $40, $4b, $92
     .db $78, $1b, $9c, $94, $9f, $11, $df, $14, $fe, $11
     .db $7d, $c1, $9e, $42, $cf, $20
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -136,7 +229,7 @@ L_GroundArea2:
     .db $fe, $40, $39, $e1, $4e, $00, $69, $60, $87, $60
     .db $a5, $60, $c3, $31, $fe, $31, $6d, $c1, $be, $42
     .db $ef, $20
-    .db $fd
+    .db $D0
 
 ;level 4-1
 L_GroundArea3:
@@ -149,7 +242,7 @@ L_GroundArea3:
     .db $47, $00, $57, $21, $5c, $01, $7c, $72, $39, $f1
     .db $ec, $02, $4c, $81, $d8, $62, $ec, $01, $0d, $0d
     .db $0f, $38, $c7, $07, $ed, $4a, $1d, $c1, $5f, $26
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -170,7 +263,7 @@ L_GroundArea4:
     .db $77, $31, $e7, $73, $39, $f1, $58, $72, $77, $73
     .db $d8, $72, $7f, $b1, $97, $73, $b6, $64, $c5, $65
     .db $d4, $66, $e3, $67, $f3, $67, $8d, $c1, $cf, $26
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -189,7 +282,7 @@ L_GroundArea5:
     .db $c7, $00, $d3, $20, $d7, $20, $67, $a0, $77, $07
     .db $87, $22, $e8, $62, $f5, $65, $1c, $82, $7f, $38
     .db $8d, $c1, $cf, $26
-    .db $fd
+    .db $D0
 
 ;level 1-1
 L_GroundArea6:
@@ -204,7 +297,7 @@ L_GroundArea6:
     .db $87, $63, $9c, $01, $b7, $63, $c8, $62, $d9, $61
     .db $ea, $60, $39, $f1, $87, $21, $a7, $01, $b7, $20
     .db $39, $f1, $5f, $38, $6d, $c1, $af, $26
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -220,7 +313,7 @@ L_GroundArea7:
     .db $0e, $91, $a7, $63, $b7, $63, $c5, $65, $d5, $65
     .db $dd, $4a, $e3, $67, $f3, $67, $8d, $c1, $ae, $42
     .db $df, $20
-    .db $fd
+    .db $D0
 
 ;level 2-3/7-3
 L_GroundArea8:
@@ -238,7 +331,7 @@ L_GroundArea8:
     .db $fc, $31, $3c, $b1, $78, $64, $8c, $38, $0b, $9c
     .db $1a, $33, $18, $61, $28, $61, $39, $60, $5d, $4a
     .db $ee, $11, $0f, $b8, $1d, $c1, $3e, $42, $6f, $20
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -255,13 +348,13 @@ L_GroundArea9:
     .db $8c, $81, $a8, $62, $17, $87, $43, $24, $a7, $01
     .db $c3, $04, $08, $f2, $97, $21, $a3, $02, $c9, $0b
     .db $e1, $69, $f1, $69, $8d, $c1, $cf, $26
-    .db $fd
+    .db $D0
 
 ;pipe intro area
 L_GroundArea10:
     .db $38, $11
     .db $0f, $26, $ad, $40, $3d, $c7
-    .db $fd
+    .db $D0
 
 ;level 5-1
 L_GroundArea11:
@@ -272,14 +365,14 @@ L_GroundArea11:
     .db $0d, $09, $37, $63, $47, $03, $57, $21, $8c, $02
     .db $c5, $79, $c7, $31, $f9, $11, $39, $f1, $a9, $11
     .db $6f, $b4, $d3, $65, $e3, $65, $7d, $c1, $bf, $26
-    .db $fd
+    .db $D0
 
 ;cloud level used in levels 2-1 and 5-2
 L_GroundArea12:
     .db $00, $c1
     .db $4c, $00, $f4, $4f, $0d, $02, $02, $42, $43, $4f
     .db $52, $c2, $de, $00, $5a, $c2, $4d, $c7
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -296,7 +389,7 @@ L_GroundArea13:
     .db $39, $12, $7c, $16, $7f, $11, $82, $40, $98, $12
     .db $df, $15, $16, $c4, $17, $14, $54, $12, $9b, $16
     .db $28, $94, $ce, $01, $3d, $c1, $5e, $42, $8f, $20
-    .db $fd
+    .db $D0
 
 ;level 6-3
 L_GroundArea14:
@@ -311,7 +404,7 @@ L_GroundArea14:
     .db $ff, $12, $03, $c1, $2f, $15, $43, $12, $4b, $13
     .db $77, $13, $9d, $4a, $15, $c1, $a1, $41, $c3, $12
     .db $fe, $01, $7d, $c1, $9e, $42, $cf, $20
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -330,7 +423,7 @@ L_GroundArea15:
     .db $87, $07, $89, $22, $ae, $21, $4c, $82, $9f, $34
     .db $ec, $01, $03, $e7, $13, $67, $8d, $4a, $ad, $41
     .db $0f, $a6
-    .db $fd
+    .db $D0
 
 ;warp zone area used in level 4-2
 L_GroundArea16:
@@ -340,7 +433,7 @@ L_GroundArea16:
     .db $a4, $42, $e2, $14, $e1, $44, $f8, $16, $37, $c1
     .db $8f, $38, $02, $bb, $28, $7a, $68, $7a, $a8, $7a
     .db $e0, $6a, $f0, $6a, $6d, $c5
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -362,7 +455,7 @@ L_GroundArea17:
     .db $39, $f1, $7c, $00, $89, $61, $9c, $00, $a7, $63
     .db $bc, $00, $c5, $65, $dc, $00, $e3, $67, $f3, $67
     .db $8d, $c1, $cf, $26
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -381,7 +474,7 @@ L_GroundArea18:
     .db $fc, $01, $7f, $b1, $9c, $00, $a7, $63, $b6, $64
     .db $cc, $00, $d4, $66, $e3, $67, $f3, $67, $8d, $c1
     .db $cf, $26
-    .db $fd
+    .db $D0
 
 ;level 8-2
 L_GroundArea19:
@@ -398,7 +491,7 @@ L_GroundArea19:
     .db $ec, $00, $f9, $11, $0c, $82, $6f, $34, $f8, $11
     .db $fa, $10, $7f, $b2, $ac, $00, $b6, $64, $cc, $01
     .db $e3, $67, $f3, $67, $8d, $c1, $cf, $26
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -414,7 +507,7 @@ L_GroundArea20:
     .db $67, $24, $d8, $62, $28, $91, $2a, $10, $56, $21
     .db $70, $04, $79, $0b, $8c, $00, $94, $21, $9f, $35
     .db $2f, $b8, $3d, $c1, $7f, $26
-    .db $fd
+    .db $D0
 
 ;cloud level used in levels 3-1 and 6-2
 L_GroundArea21:
@@ -423,7 +516,7 @@ L_GroundArea21:
     .db $35, $a0, $36, $20, $53, $46, $d5, $20, $d6, $20
     .db $34, $a1, $73, $49, $74, $20, $94, $20, $b4, $20
     .db $d4, $20, $f4, $20, $2e, $80, $59, $42, $4d, $c7
-    .db $fd
+    .db $D0
 
 ;level 3-2
 L_GroundArea22:
@@ -433,7 +526,7 @@ L_GroundArea22:
     .db $0c, $81, $4e, $b1, $8e, $b1, $bc, $01, $e4, $50
     .db $e9, $61, $0c, $81, $0d, $0a, $84, $43, $98, $72
     .db $0d, $0c, $0f, $38, $1d, $c1, $5f, $26
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -457,7 +550,7 @@ L_UndergroundArea1:
     .db $66, $04, $8e, $00, $fe, $01, $08, $d2, $0e, $06
     .db $6f, $47, $9e, $0f, $0e, $82, $2d, $47, $28, $7a
     .db $68, $7a, $a8, $7a, $ae, $01, $de, $0f, $6d, $c5
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -481,7 +574,7 @@ L_UndergroundArea2:
     .db $27, $29, $df, $33, $fe, $02, $44, $f6, $7c, $01
     .db $8e, $06, $bf, $47, $ee, $0f, $4d, $c7, $0e, $82
     .db $68, $7a, $ae, $01, $de, $0f, $6d, $c5
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -502,7 +595,7 @@ L_UndergroundArea3:
     .db $4d, $c7, $0e, $81, $00, $5a, $3e, $02, $44, $51
     .db $53, $44, $54, $44, $55, $24, $a1, $54, $ae, $01
     .db $b4, $21, $df, $4a, $e5, $07, $4d, $c7
-    .db $fd
+    .db $D0
 
 ;water area used in levels 5-2 and 6-2
 L_WaterArea1:
@@ -519,7 +612,7 @@ L_WaterArea1:
     .db $ce, $0b, $de, $0f, $e5, $09, $7d, $ca, $7d, $47    ; PAL bugfix: Close 1-tile gap above exit pipe
     .ENDIF
     
-    .db $fd
+    .db $D0
 
 ; ---
 
@@ -544,7 +637,7 @@ L_WaterArea2:
     .db $be, $0b, $ce, $0f, $d5, $09, $0d, $ca, $7d, $47    ; PAL bugfix: Close 1-tile gap above exit pipe
     .ENDIF
     
-    .db $fd
+    .db $D0
 
 ;water area used in level 8-4
 L_WaterArea3:
@@ -559,4 +652,4 @@ L_WaterArea3:
     .db $45, $09, $ed, $47
     .ENDIF
     
-    .db $fd
+    .db $D0
