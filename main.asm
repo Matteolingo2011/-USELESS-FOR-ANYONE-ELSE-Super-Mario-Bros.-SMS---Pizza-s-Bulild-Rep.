@@ -1457,7 +1457,7 @@ MushroomPaletteData:
 BowserPaletteData:
     .dw swapBytes($C010)
     .db StripeCount($10)
-    .db $00, $00, $10, $15, $2A, $24, $0E, $06, $1B, $07, $04, $3F, $03, $02, $10, $09
+    .db $00, $00, $04, $15, $2A, $24, $0E, $06, $1B, $0F, $07, $3F, $03, $02, $10, $09
     .db $00
 .ENDS
 
@@ -2085,6 +2085,19 @@ Tiles_SPR_Enemies:
 Tiles_SPR_Lakitu:
     .INCBIN "SPR_Lakitu.zx7"
 .ENDS
+
+.SECTION "Podoboo Enemy Sprite Tiles" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_SPR_Podoboo:
+    .INCBIN "SPR_Podoboo.zx7"
+.ENDS
+
+.SECTION "Bowser Enemy Sprite Tiles" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_SPR_Bowser:
+    .INCBIN "SPR_Bowser.zx7"
+.ENDS
+
 
 ;-------------------------------------------------------------------------------------
 .SECTION "Uncompressed Player Tiles - Mario [Right, Palette 0]" BANK BANK_PLAYERGFX00 SLOT 2 FORCE ORG $0000

@@ -47,7 +47,7 @@ InitializeArea:
     DEC (HL)
     INC H
     DEC (HL)
-    
+
     INC H
     DEC (HL)
 
@@ -1242,7 +1242,8 @@ ChkAreaTsk:
     JP ProcLoopCommand
 ChkBowserF:
     AND A, %00001111                ;mask out high nybble
-    LD D, H
+    ADD A, >Enemy_ID
+    LD D, A
     LD E, <Enemy_Flag
     LD A, (DE)                      ;use as pointer and load same place with different offset
     OR A
@@ -3247,102 +3248,103 @@ PRandomRange:
 RunBowser:
     POP HL
 ;
-    LD L, <Enemy_State
+    LD L, <Enemy_State                          ;if d5 in enemy state is not set
     LD A, (HL)
-    AND A, %00100000
+    AND A, %00100000                            ;then branch elsewhere to run bowser
     JP Z, BowserControl
 ;
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position                     ;otherwise check vertical position
     LD A, (HL)
-    CP A, $E0
-    JP C, MoveD_Bowser
+    CP A, $E0                                   ;if above a certain point, branch to move defeated bowser
+    JP C, MoveD_Bowser                          ;otherwise proceed to KillAllEnemies
+    ; FALL THROUGH
 
 KillAllEnemies:
-    LD H, >Enemy_ID_04
+    LD H, >Enemy_ID_04                          ;start with last enemy slot
 KillLoop:
-    CALL EraseEnemyObject
-    DEC H
+    CALL EraseEnemyObject                       ;branch to kill enemy objects
+    DEC H                                       ;move onto next enemy slot
     LD A, H
     CP A, >Enemy_ID - $01
-    JP NZ, KillLoop
+    JP NZ, KillLoop                             ;do this until all slots are emptied
 ;
-    XOR A
+    XOR A                                       ;empty frenzy buffer
     LD (EnemyFrenzyBuffer), A
 ;
-    LD HL, (ObjectOffset)
+    LD HL, (ObjectOffset)                       ;get enemy object offset and leave
     RET
 
 BowserControl:
     XOR A
-    LD (EnemyFrenzyBuffer), A
+    LD (EnemyFrenzyBuffer), A                   ;empty frenzy buffer
 ;
-    LD A, (TimerControl)
+    LD A, (TimerControl)                        ;if master timer control set,
     OR A
-    JP NZ, ChkFireB
+    JP NZ, ChkFireB                             ;jump over a bunch of code
 ;
-    LD A, (BowserBodyControls)
+    LD A, (BowserBodyControls)                  ;check bowser's mouth
     OR A
-    JP M, HammerChk
+    JP M, HammerChk                             ;if bit set, skip a whole section starting here
 ;
-    LD A, (BowserFeetCounter)
+    LD A, (BowserFeetCounter)                   ;decrement timer to control bowser's feet
     DEC A
     LD (BowserFeetCounter), A
-    JP NZ, ResetMDr
+    JP NZ, ResetMDr                             ;if not expired, skip this part
 ;
-    LD A, $20
+    LD A, $20                                   ;otherwise, reset timer
     LD (BowserFeetCounter), A
     LD A, (BowserBodyControls)
-    XOR A, %00000001
-    LD (BowserBodyControls), A
+    XOR A, %00000001                            ;and invert bit used
+    LD (BowserBodyControls), A                  ;to control bowser's feet
 ;
 ResetMDr:
-    LD A, (FrameCounter)
-    AND A, %00001111
-    JP NZ, B_FaceP
-    LD L, <Enemy_MovingDir
-    LD (HL), $02
+    LD A, (FrameCounter)                        ;check frame counter
+    AND A, %00001111                            ;if not on every sixteenth frame, skip
+    JP NZ, B_FaceP                              ;ahead to continue code
+    LD L, <Enemy_MovingDir                      ;otherwise reset moving/facing direction every
+    LD (HL), $02                                ;sixteen frames
 ;
 B_FaceP:
     LD A, H
     SUB A, $C1
     LD BC, EnemyFrameTimer
     addAToBC8_M
-    LD A, (BC)
+    LD A, (BC)                                  ;if timer set here expired,
     OR A
-    JP Z, GetPRCmp
-    CALL PlayerEnemyDiff
-    JP P, GetPRCmp
+    JP Z, GetPRCmp                              ;branch to next section
+    CALL PlayerEnemyDiff                        ;get horizontal difference between player and bowser,
+    JP P, GetPRCmp                              ;and branch if bowser to the right of the player
 ;
-    LD L, <Enemy_MovingDir
+    LD L, <Enemy_MovingDir                      ;set bowser to move and face to the right
     LD (HL), $01
-    LD L, <BowserMovementSpeed
-    LD (HL), $02
+    LD A, $02
+    LD (BowserMovementSpeed), A                 ;set movement speed
     LD A, $20
-    LD (BC), A
-    LD (BowserFireBreathTimer), A
+    LD (BC), A                                  ;set timer here
+    LD (BowserFireBreathTimer), A               ;set timer used for bowser's flame
     LD L, <Enemy_X_Position
     LD A, (HL)
-    CP A, $C8
-    JP NC, HammerChk
+    CP A, $C8                                   ;if bowser to the right past a certain point,
+    JP NC, HammerChk                            ;skip ahead to some other section
 ;
 GetPRCmp:
-    LD A, (FrameCounter)
+    LD A, (FrameCounter)                        ;skip ahead to some other section
     AND A, %00000011
-    JP NZ, HammerChk
+    JP NZ, HammerChk                            ;execute this code every fourth frame, otherwise branch
     LD A, (BowserOrigXPos)
     LD L, <Enemy_X_Position
-    CP A, (HL)
-    JP NZ, GetDToO
+    CP A, (HL)                                  ;if bowser not at original horizontal position,
+    JP NZ, GetDToO                              ;branch to skip this part
     LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
-    LD A, (BC)
+    LD A, (BC)                                  ;get pseudorandom offset
     AND A, %00000011
     LD BC, PRandomRange
     addAToBC8_M
-    LD A, (BC)
-    LD (MaxRangeFromOrigin), A
+    LD A, (BC)                                  ;load value using pseudorandom offset
+    LD (MaxRangeFromOrigin), A                  ;and store here
 ;
 GetDToO:
     LD A, (BowserOrigXPos)
@@ -3350,159 +3352,348 @@ GetDToO:
     LD A, (MaxRangeFromOrigin)
     LD C, A
 
-    LD A, (BowserMovementSpeed)
-    LD L, <Enemy_X_Position
+    LD A, (BowserMovementSpeed)                 ;add movement speed to bowser's horizontal
+    LD L, <Enemy_X_Position                     ;coordinate and save as new horizontal position
     ADD A, (HL)
     LD (HL), A
     LD L, <Enemy_MovingDir
-    BIT 0, (HL)
+    BIT 0, (HL)                                 ;if bowser moving and facing to the right, skip ahead
     JP NZ, HammerChk
-    SUB A, B
-    LD B, $FF
-    JP P, CompDToO
-    LD B, $01
-    NEG
+    SUB A, B                                    ;get difference of current vs. original horizontal position
+    LD B, $FF                                   ;set default movement speed here (move left)
+    JP P, CompDToO                              ;if current position to the right of original, skip ahead
+    LD B, $01                                   ;set alternate movement
+    NEG                                         ;get two's compliment
 CompDToO:
-    CP A, C
-    JP C, HammerChk
+    CP A, C                                     ;compare difference with pseudorandom value
+    JP C, HammerChk                             ;if difference < pseudorandom value, leave speed alone
     LD A, B
-    LD (BowserMovementSpeed), A
+    LD (BowserMovementSpeed), A                 ;otherwise change bowser's movement speed
 ;
 HammerChk:
     LD A, H
     SUB A, $C1
     LD BC, EnemyFrameTimer
     addAToBC8_M
-    LD A, (BC)
+    LD A, (BC)                                  ;if timer set here not expired yet, skip ahead to
     OR A
-    JP NZ, MakeBJump
-    PUSH BC
-    CALL MoveEnemySlowVert
-    LD A, (WorldNumber)
+    JP NZ, MakeBJump                            ;some other section of code
+    PUSH BC                                     ;save frame timer address
+    CALL MoveEnemySlowVert                      ;otherwise start by moving bowser downwards
+    LD A, (WorldNumber)                         ;check world number
     CP A, WORLD6
-    JP C, SetHmrTmr
+    JP C, SetHmrTmr                             ;if world 1-5, skip this part (not time to throw hammers yet)
     LD A, (FrameCounter)
-    AND A, %00000011
-    CALL Z, SpawnHammerObj
+    AND A, %00000011                            ;check to see if it's time to execute sub
+    CALL Z, SpawnHammerObj                      ;if so, execute sub on every fourth frame to spawn misc object (hammer)
 SetHmrTmr:
-    POP DE
-    LD L, <Enemy_Y_Position
+    POP DE                                      ;put frame timer address in DE
+    LD L, <Enemy_Y_Position                     ;get current vertical position
     LD A, (HL)
-    CP A, $80
-    JP C, ChkFireB
+    CP A, $80                                   ;if still above a certain point
+    JP C, ChkFireB                              ;then skip to world number check for flames
     LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
-    LD A, (BC)
+    LD A, (BC)                                  ;get pseudorandom offset
     AND A, %00000011
     LD BC, PRandomRange
     addAToBC8_M
-    LD A, (BC)
-    LD (DE), A
-    JP ChkFireB
+    LD A, (BC)                                  ;get value using pseudorandom offset
+    LD (DE), A                                  ;set for timer here
+    JP ChkFireB                                 ;jump to execute flames code
 ;
 MakeBJump:
-    DEC A
-    JP NZ, ChkFireB
-    LD L, <Enemy_Y_Position
+    DEC A                                       ;if timer not yet about to expire,
+    JP NZ, ChkFireB                             ;skip ahead to next part
+    LD L, <Enemy_Y_Position                     ;otherwise decrement vertical coordinate
     DEC (HL)
-    CALL InitVStf
-    LD L, <Enemy_Y_Speed
+    CALL InitVStf                               ;initialize movement amount
+    LD L, <Enemy_Y_Speed                        ;set vertical speed to move bowser upwards
     LD (HL), $FE
 ;
 ChkFireB:
-    LD A, (WorldNumber)
-    CP A, WORLD8
-    JP Z, SpawnFBr
-    CP A, WORLD6
-    JP NC, BowserGfxHandler
+    LD A, (WorldNumber)                         ;check world number here
+    CP A, WORLD8                                ;world 8?
+    JP Z, SpawnFBr                              ;if so, execute this part here
+    CP A, WORLD6                                ;world 6-7?
+    JP NC, BowserGfxHandler                     ;if so, skip this part here
 SpawnFBr:
-    LD A, (BowserFireBreathTimer)
+    LD A, (BowserFireBreathTimer)               ;check timer here
     OR A
-    JP NZ, BowserGfxHandler
+    JP NZ, BowserGfxHandler                     ;if not expired yet, skip all of this
     LD A, $20
-    LD (BowserFireBreathTimer), A
+    LD (BowserFireBreathTimer), A               ;set timer here
     LD A, (BowserBodyControls)
-    XOR A, %10000000
-    LD (BowserBodyControls), A
-    JP M, ChkFireB
-    CALL SetFlameTimer
+    XOR A, %10000000                            ;invert bowser's mouth bit to open
+    LD (BowserBodyControls), A                  ;and close bowser's mouth
+    JP M, ChkFireB                              ;if bowser's mouth open, loop back
+    CALL SetFlameTimer                          ;get timing for bowser's flame
     LD C, A
     LD A, (SecondaryHardMode)
     OR A
     LD A, C
-    JP Z, SetFBTmr
-    SUB A, $10
+    JP Z, SetFBTmr                              ;if secondary hard mode flag not set, skip this
+    SUB A, $10                                  ;otherwise subtract from value in A
 SetFBTmr:
-    LD (BowserFireBreathTimer), A
-    LD A, OBJECTID_BowserFlame
-    LD (EnemyFrenzyBuffer), A
+    LD (BowserFireBreathTimer), A               ;set value as timer here
+    LD A, OBJECTID_BowserFlame                  ;put bowser's flame identifier
+    LD (EnemyFrenzyBuffer), A                   ;in enemy frenzy buffer
+    ; FALL THROUGH
 
 ;--------------------------------
 
 BowserGfxHandler:
-    CALL ProcessBowserHalf
+    CALL ProcessBowserHalf                      ;do a sub here to process bowser's front
 ;
-    LD L, <Enemy_MovingDir
+    LD L, <Enemy_MovingDir                      ;check moving direction
     LD A, (HL)
     RRCA
-    LD A, $10
-    JP NC, CopyFToR
-    LD A, $F0
+    LD A, $10                                   ;load default value here to position bowser's rear
+    JP NC, CopyFToR                             ;if moving left, use default
+    LD A, $F0                                   ;otherwise load alternate positioning value here
 CopyFToR:
-    LD DE, (DuplicateObj_Offset)
+    LD DE, (DuplicateObj_Offset)                ;get bowser's rear object offset
     LD L, <Enemy_X_Position
     LD E, L
-    ADD A, (HL)
-    LD (DE), A
+    ADD A, (HL)                                 ;add to bowser's front object horizontal coordinate
+    LD (DE), A                                  ;store A as bowser's rear horizontal coordinate
     LD L, <Enemy_Y_Position
     LD E, L
     LD A, (HL)
-    ADD A, $08
-    LD (DE), A
+    ;ADD A, $08                                  ;add eight pixels to bowser's front object
+    LD (DE), A                                  ;vertical coordinate and store as vertical coordinate
     LD L, <Enemy_State
     LD E, L
-    LD A, (HL)
+    LD A, (HL)                                  ;copy enemy state directly from front to rear
     LD (DE), A
     LD L, <Enemy_MovingDir
     LD E, L
-    LD A, (HL)
+    LD A, (HL)                                  ;copy moving direction also
     LD (DE), A
-    PUSH HL
-    LD L, E
+    PUSH HL                                     ;save enemy object offset of front to stack
+    LD L, E                                     ;put enemy object offset of rear as current
     LD H, D
     LD (ObjectOffset), HL
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                             ;set bowser's enemy identifier
     LD (HL), OBJECTID_Bowser
-    CALL ProcessBowserHalf
+    CALL ProcessBowserHalf                      ;do a sub here to process bowser's rear
     POP HL
-    LD (ObjectOffset), HL
-    XOR A
+    LD (ObjectOffset), HL                       ;get original enemy object offset
+    XOR A                                       ;nullify bowser's front/rear graphics flag
     LD (BowserGfxFlag), A
     RET
 
 ProcessBowserHalf:
-    LD A, (BowserGfxFlag)
+    LD A, (BowserGfxFlag)                       ;increment bowser's graphics flag, then run subroutines
     INC A
     LD (BowserGfxFlag), A
 ;
-    CALL GetEnemyOffscreenBits
+    CALL GetEnemyOffscreenBits                  ;to get offscreen bits, relative position and draw bowser
     CALL RelativeEnemyPosition
     CALL BowserGfxDraw
 ;
     LD L, <Enemy_State
     LD A, (HL)
     OR A
-    RET NZ
+    RET NZ                                      ;if either enemy object not in normal state, branch to leave
 ;
-    LD L, <Enemy_BoundBoxCtrl
+    LD L, <Enemy_BoundBoxCtrl                   ;set bounding box size control
     LD (HL), $0A
-    CALL GetEnemyBoundBox
-    JP PlayerEnemyCollision
+    CALL GetEnemyBoundBox                       ;get bounding box coordinates
+    JP PlayerEnemyCollision                     ;do player-to-enemy collision detection
+
+; FRONT: FRAME 0 - MOUTH OPEN, FRAME 1 - MOUTH CLOSED [D7]
+; REAR: FRAME 0 - FRONT FOOT UP, FRAME 1 - REAR FOOT UP [D0]
+
+; 00 - FRONT FOOT, MOUTH OPEN
+; 01 - FRONT FOOT, MOUTH CLOSED
+; 10 - REAR FOOT, MOUTH OPEN
+; 11 - REAR FOOT, MOUTH CLOSED
 
 BowserGfxDraw:
+    LD L, <Enemy_Y_Position                 ;get enemy object vertical position
+    LD A, (HL)
+    SUB A, SMS_PIXELYOFFSET - $08
+    LD B, A
+    LD A, (Enemy_Rel_XPos)                  ;get enemy object horizontal position
+    LD C, A                                 ;relative to screen
+    PUSH BC
+;
+    LD L, <Enemy_SprDataOffset              ;get sprite data offset
+    LD E, (HL)
+    LD D, >Sprite_Y_Position
+;
+    LD L, <Enemy_MovingDir                  ;get enemy object moving direction
+    LD A, (HL)
+    DEC A
+    LD HL, BowserSpriteFramesHFlip
+    JP Z, +
+    LD L, <BowserSpriteFrames
+;
++:
+    LD A, (BowserGfxFlag)
+    DEC A
+    JP Z, +
+    LD A, $06
+    addAToHL8_M
+;
++:
+    LD A, (BowserBodyControls)
+    RRCA
+    RRCA
+    RRCA
+    addAToHL8_M
+    CALL DrawSpriteObject
+    CALL DrawSpriteObject
+    CALL DrawSpriteObject
+    CALL SprObjectOffscrChk
+;
+    POP BC
+    LD A, $F8
+    ADD A, B
+    LD B, A
+    LD A, (BowserGfxFlag)
+    DEC A
+    LD L, <Enemy_MovingDir
+    LD A, (HL)
+    LD HL, Bubble_SprDataOffset
+    LD E, (HL)
+    LD D, >Sprite_Y_Position
+    EX DE, HL
+    JP Z, FrontExtraSprites
+;
+    DEC A
+    JP NZ, BowserGfxExtraLeftRear
+    LD A, (Enemy_OffscrBits)
+    AND A, %00000100
+    JP NZ, BowserGfxRet
+    INC D
+    INC D
+    LD A, (DE)
+    LD L, A
+    LD (HL), B
+    SLA L
+    SET 7, L
+    LD A, C
+    ADD A, $08
+    LD (HL), A
+    INC L
+    LD (HL), $AE
+    JP BowserGfxRet
+BowserGfxExtraLeftRear:
+    LD A, (Enemy_OffscrBits)
+    AND A, %00001000
+    JP NZ, BowserGfxRet
+    INC D
+    INC D
+    LD A, (DE)
+    LD L, A
+    LD (HL), B
+    SLA L
+    SET 7, L
+    LD (HL), C
+    INC L
+    LD (HL), $95
+    JP BowserGfxRet
+
+FrontExtraSprites:
+    DEC A
+    JP NZ, BowserGfxExtraLeftFront
+    LD A, (Enemy_OffscrBits)
+    AND A, %00001000
+    JP NZ, +
+    ; TILE 0
+    LD (HL), B
+    SLA L
+    SET 7, L
+    LD (HL), C
+    INC L
+    LD (HL), $AF
++:
+    ; TILE 1
+    LD A, C
+    ADD A, $08
+    LD C, A
+    LD A, (Enemy_OffscrBits)
+    AND A, %00000100
+    JP NZ, BowserGfxRet
+    INC D
+    LD A, (DE)
+    LD L, A
+    LD (HL), B
+    SLA L
+    SET 7, L
+    LD (HL), C
+    INC L
+    LD (HL), $B0
+    JP BowserGfxRet
+BowserGfxExtraLeftFront:
+    LD A, (Enemy_OffscrBits)
+    AND A, %00001000
+    JP NZ, +
+    ; TILE 0
+    LD (HL), B
+    SLA L
+    SET 7, L
+    LD (HL), C
+    INC L
+    LD (HL), $93
++:
+    ; TILE 1
+    LD A, C
+    ADD A, $08
+    LD C, A
+    LD A, (Enemy_OffscrBits)
+    AND A, %00000100
+    JP NZ, BowserGfxRet
+    INC D
+    LD A, (DE)
+    LD L, A
+    LD (HL), B
+    SLA L
+    SET 7, L
+    LD (HL), C
+    INC L
+    LD (HL), $94
+BowserGfxRet:
+    LD HL, (ObjectOffset)
     RET
+
+.SECTION "Bowser Sprite Data" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
+BowserSpriteFrames:
+    .db $96, $97, $9A, $9B, $9E, $9F ; FRONT FOOT, MOUTH OPEN
+    .db $98, $99, $9C, $9D, $A0, $A1
+    .db $00, $00, $00, $00
+
+    .db $A2, $A3, $A4, $A5, $9E, $9F ; FRONT FOOT, MOUTH CLOSED
+    .db $98, $99, $9C, $9D, $A0, $A1
+    .db $00, $00, $00, $00
+
+    .db $96, $97, $A6, $A7, $A8, $A9 ; REAR FOOT, MOUTH OPEN
+    .db $98, $99, $9C, $9D, $AA, $AB
+    .db $00, $00, $00, $00
+
+    .db $A2, $A3, $AC, $AD, $A8, $A9 ; REAR FOOT, MOUTH CLOSED
+    .db $98, $99, $9C, $9D, $AA, $AB
+
+BowserSpriteFramesHFlip:
+    .db $B3, $B4, $B7, $B8, $BB, $BC
+    .db $B1, $B2, $B5, $B6, $B9, $BA
+    .db $00, $00, $00, $00
+
+    .db $BD, $BE, $BF, $C0, $BB, $BC
+    .db $B2, $B2, $B5, $B6, $B9, $BA
+    .db $00, $00, $00, $00
+
+    .db $B3, $B4, $C1, $C2, $C5, $C6
+    .db $B1, $B2, $B5, $B6, $C3, $C4
+    .db $00, $00, $00, $00
+
+    .db $BD, $BE, $C7, $C8, $C5, $C6
+    .db $B1, $B2, $B5, $B6, $C3, $C4
+.ENDS
 
 ;-------------------------------------------------------------------------------------
 ;$00(B) - used to hold movement force and tile number
@@ -3520,8 +3711,8 @@ FlameTimerData:
 
 .SECTION "FlameTileData" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 FlameTileData:
-    .db $58, $59, $5A   ; NORMAL
-    .db $5B, $90, $91   ; VFLIP
+    .db $4A, $4B, $4C   ; NORMAL
+    .db $4D, $4E, $4F   ; VFLIP
 .ENDS
 
 SetFlameTimer:
@@ -5791,14 +5982,14 @@ BowserIdentities:
 HandleEnemyFBallCol:
     CALL RelativeEnemyPosition
 ;
+    LD E, H
     LD L, <Enemy_Flag
     LD A, (HL)
     OR A
     JP P, ChkBuzzyBeetle
 ;
-    LD E, H
     AND A, %00001111
-    ADD A, $C1
+    ADD A, >Enemy_ID
     LD H, A
     LD L, <Enemy_ID
     CP A, OBJECTID_Bowser
@@ -5820,7 +6011,7 @@ HurtBowser:
     LD A, (BowserHitPoints)
     DEC A
     LD (BowserHitPoints), A
-    RET NZ
+    JP NZ, ExHCF
 ;
     CALL InitVStf
     LD L, <Enemy_X_Speed
@@ -5850,7 +6041,6 @@ SetDBSte:
     LD (SFXTrack1.SoundQueue), A
 ;
     LD H, E
-;
     LD A, $09
     JP EnemySmackScore
 
@@ -5902,6 +6092,10 @@ EnemySmackScore:
     CALL SetupFloateyNumber
     LD A, SNDID_KICK
     LD (SFXTrack0.SoundQueue), A
+    RET
+
+ExHCF:
+    LD H, E
     RET
 
 ;-------------------------------------------------------------------------------------

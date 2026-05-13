@@ -1000,6 +1000,9 @@ InitBowser:
 ;
     SRL A
     LD (BowserMovementSpeed), A
+;
+    LD A, VRAMTBL_BOWSERPAL             ;load bowser's palette into sprite portion of palette
+    LD (VRAM_Buffer_AddrCtrl), A
     RET
 
 ;--------------------------------

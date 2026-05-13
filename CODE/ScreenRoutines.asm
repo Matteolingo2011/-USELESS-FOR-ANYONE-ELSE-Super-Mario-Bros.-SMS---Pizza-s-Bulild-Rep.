@@ -466,9 +466,18 @@ CastleSetup:
     LD HL, Tiles_BG_Castle
     LD DE, $2F20 | VRAMWRITE
     CALL zx7_decompressVRAM
-    ; PODOBOO SPRITE
-    ; FIRE PROJECTILE SPRITES
+    ; PODOBOO & FLAME SPRITE
+    LD A, :Tiles_SPR_Podoboo
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_SPR_Podoboo
+    LD DE, $0840 | VRAMWRITE
+    CALL zx7_decompressVRAM
     ; BOWSER SPRITES
+    LD A, :Tiles_SPR_Bowser
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_SPR_Bowser
+    LD DE, $1260 | VRAMWRITE
+    CALL zx7_decompressVRAM
     ; RETAINER/PRINCESS SPRITE
     JP TileLoadDone
 WaterAreaSetup:

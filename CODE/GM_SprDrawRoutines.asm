@@ -120,10 +120,10 @@ NextVSp:
 ;     .db $81, $83, $80, $82
 
 HammerSpriteData:
-    .db $00, $08, $04, $E6, $00, $E7, $00, $00    ; FIRST (DOWN)
-    .db $04, $00, $00, $E8, $08, $E9, $00, $00    ; SECOND (LEFT)
-    .db $00, $08, $04, $E7, $00, $EA, $00, $00    ; THIRD (UP)
-    .db $04, $00, $00, $E9, $08, $EB, $00, $00    ; FOURTH (RIGHT)
+    .db $00, $08, $04, $CA, $00, $CB, $00, $00    ; FIRST (DOWN)
+    .db $04, $00, $00, $CC, $08, $CD, $00, $00    ; SECOND (LEFT)
+    .db $00, $08, $04, $CB, $00, $CE, $00, $00    ; THIRD (UP)
+    .db $04, $00, $00, $CD, $08, $CF, $00, $00    ; FOURTH (RIGHT)
 
 ; HammerSprAttrib:
 ;     .db $03, $03, $c3, $c3
@@ -163,6 +163,12 @@ RenderH:
     ;
     LD A, (Misc_Rel_YPos)
     SUB A, SMS_PIXELYOFFSET
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    RET Z
+    ; ---
+
     ADD A, (HL)
     LD (DE), A
     INC E
@@ -254,10 +260,10 @@ FlagpoleGfxHandler:
     LD E, (HL)                      ;get sprite data offset for flagpole flag
     LD A, (Enemy_Rel_XPos)
     ADD A, $0C + $08                ;add twelve more pixels and
-    LD C, A;LD (Temp_Bytes + $05), A        ;store here to be used later by floatey number
+    LD C, A                         ;store here to be used later by floatey number
     LD A, (FlagpoleFNum_Y_Pos)      ;get vertical coordinate for floatey number
     SUB A, SMS_PIXELYOFFSET
-    LD B, A;LD (Temp_Bytes + $02), A        ;store it here
+    LD B, A                         ;store it here
 ;
     LD A, (FlagpoleCollisionYPos)   ;get vertical coordinate at time of collision
     OR A
@@ -344,6 +350,12 @@ DrawLargePlatform:
     LD L, <Enemy_Y_Position
     LD A, (HL)
     SUB A, SMS_PIXELYOFFSET
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    RET Z
+    ; ---
+
     LD (DE), A
     INC E
     LD (DE), A
@@ -532,9 +544,17 @@ DrawPowerUp:
 ;
     LD A, (Enemy_Rel_YPos)
     ADD A, $08 - SMS_PIXELYOFFSET
-    LD B, A ;LD (Temp_Bytes + $02), A
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    JP NZ, +
+    INC A
++:
+    ; ---
+
+    LD B, A
     LD A, (Enemy_Rel_XPos)
-    LD C, A ;LD (Temp_Bytes + $05), A
+    LD C, A
 ;
     LD A, (PowerUpType)
     ADD A, A
@@ -578,8 +598,8 @@ EnemyGraphicsTable:
     .db $00, $00, $9F, $A0, $A1, $A2  ;bloober frame 1
     .db $9F, $A0, $A3, $A4, $A5, $A6  ;        frame 2
     ; ---
-    .db $00, $00, $87, $88, $89, $8A  ;cheep-cheep frame 1
-    .db $00, $00, $8B, $88, $8C, $8A  ;            frame 2
+    .db $00, $00, $93, $94, $95, $96  ;cheep-cheep frame 1
+    .db $00, $00, $97, $94, $98, $96  ;cheep-cheep frame 2
     ; ---
     .db $00, $00, $53, $54, $55, $56  ;goomba
     ; ---
@@ -600,13 +620,18 @@ EnemyGraphicsTable:
     .db $93, $94, $95, $96, $97, $98  ;lakitu frame 1
     .db $00, $00, $99, $9A, $97, $98  ;       frame 2
     ; ---
-    .db $00, $00, $93, $94, $95, $96  ;cheep-cheep frame 1 (red) [$9C]
-    .db $00, $00, $97, $94, $98, $96  ;cheep-cheep frame 2 (red)
+    .db $00, $00, $87, $88, $89, $8A  ;cheep-cheep frame 1 (red)
+    .db $00, $00, $8B, $88, $8C, $8A  ;            frame 2 (red)
     ; ---
-    .db $CA, $CB, $CC, $CD, $CE, $CF  ;hammer bro frame 1
-    .db $CA, $CB, $D0, $D1, $D2, $D3  ;           frame 2
-    .db $D4, $D5, $D6, $D7, $CE, $CF  ;           frame 3
-    .db $D4, $D5, $D6, $D7, $D2, $D3  ;           frame 4
+    ;.db $CA, $CB, $CC, $CD, $CE, $CF  ;hammer bro frame 1
+    ;.db $CA, $CB, $D0, $D1, $D2, $D3  ;           frame 2
+    ;.db $D4, $D5, $D6, $D7, $CE, $CF  ;           frame 3
+    ;.db $D4, $D5, $D6, $D7, $D2, $D3  ;           frame 4
+
+    .db $D0, $D1, $D2, $D3, $D4, $D5  ;hammer bro frame 1
+    .db $D0, $D1, $D6, $D7, $D8, $D9  ;           frame 2
+    .db $DA, $DB, $DC, $DD, $D4, $D5  ;           frame 3
+    .db $DA, $DB, $DC, $DD, $D8, $D9  ;           frame 4
     ; ---
     .db $7D, $7E, $7F, $80, $81, $82  ;piranha plant frame 1
     .db $83, $84, $85, $86, $81, $82  ;              frame 2
@@ -647,8 +672,8 @@ EnemyGraphicsTable_HFlip:
     .db $00, $00, $9F, $A0, $A1, $A2  ;bloober frame 1
     .db $9F, $A0, $A3, $A4, $A5, $A6  ;        frame 2
     ; ---
-    .db $00, $00, $8D, $8E, $8F, $90  ;cheep-cheep frame 1
-    .db $00, $00, $8D, $91, $8F, $92  ;            frame 2
+    .db $00, $00, $99, $9A, $9B, $9C  ;cheep-cheep frame 1
+    .db $00, $00, $99, $9D, $9B, $9E  ;cheep-cheep frame 2
     ; ---
     .db $00, $00, $53, $54, $59, $5A  ;goomba
     ; ---
@@ -669,13 +694,18 @@ EnemyGraphicsTable_HFlip:
     .db $AB, $AC, $AD, $AE, $97, $98  ;lakitu frame 1
     .db $00, $00, $99, $9A, $97, $98  ;       frame 2
     ; ---
-    .db $00, $00, $99, $9A, $9B, $9C  ;cheep-cheep frame 1 (red)
-    .db $00, $00, $99, $9D, $9B, $9E  ;cheep-cheep frame 2 (red)
+    .db $00, $00, $8D, $8E, $8F, $90  ;cheep-cheep frame 1 (red)
+    .db $00, $00, $8D, $91, $8F, $92  ;            frame 2 (red)
     ; ---
-    .db $D8, $D9, $DA, $DB, $DC, $DD  ;hammer bro frame 1
-    .db $D8, $D9, $DE, $DF, $E0, $E1  ;           frame 2
-    .db $E2, $E3, $E4, $E5, $DC, $DD  ;           frame 3
-    .db $E2, $E3, $E4, $E5, $E0, $E1  ;           frame 4
+    ;.db $D8, $D9, $DA, $DB, $DC, $DD  ;hammer bro frame 1
+    ;.db $D8, $D9, $DE, $DF, $E0, $E1  ;           frame 2
+    ;.db $E2, $E3, $E4, $E5, $DC, $DD  ;           frame 3
+    ;.db $E2, $E3, $E4, $E5, $E0, $E1  ;           frame 4
+
+    .db $DE, $DF, $E0, $E1, $E2, $E3  ;hammer bro frame 1
+    .db $DE, $DF, $E4, $E5, $E6, $E7  ;           frame 2
+    .db $E8, $E9, $EA, $EB, $E2, $E3  ;           frame 3
+    .db $E8, $E9, $EA, $EB, $E6, $E7  ;           frame 4
     ; ---
     .db $7D, $7E, $7F, $80, $81, $82  ;piranha plant frame 1
     .db $83, $84, $85, $86, $81, $82  ;              frame 2
@@ -1031,7 +1061,17 @@ CheckDefeatedState:
     LD IXH, $00
 
 DrawEnemyObject:
-    LD B, D
+    ;LD B, D
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    LD A, D
+    CP A, $D0
+    JP NZ, +
+    INC A
++:
+    ; -----
+    LD B, A
+
     LD A, (Temp_Bytes + $05)
     LD C, A
 
@@ -1130,25 +1170,33 @@ PodobooGfxHandler:
     OR A
     LD HL, PodobooTiles
     JP M, +
-    LD L, <PodobooTiles + $08
+    LD L, <PodobooTiles + $04
 ;   ANIMATE ADJUST
 +:
-    LD A, (FrameCounter)
-    AND A, $08
-    JP NZ, +
-    LD A, (TimerControl)
-    LD C, A
-    LD A, IYL
-    AND A, %10100000
-    OR A, C
-    JP NZ, +
-    LD A, $04
-    addAToHL8_M
+    ; LD A, (FrameCounter)
+    ; AND A, $08
+    ; JP NZ, +
+    ; LD A, (TimerControl)
+    ; LD C, A
+    ; LD A, IYL
+    ; AND A, %10100000
+    ; OR A, C
+    ; JP NZ, +
+    ; LD A, $04
+    ; addAToHL8_M
 ;   DRAW SPRITE
 +:
     LD A, D
     ADD A, $08
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    JP NZ, +
+    INC A
++:
+    ; ---
     LD B, A
+
     LD A, (Temp_Bytes + $05)
     LD C, A
     LD D, >Sprite_Y_Position
@@ -1293,10 +1341,10 @@ JumpspringFramesRight:
 
 .SECTION "Podoboo Tiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 PodobooTiles:
-    .db $48, $49, $4A, $4B  ; FRAME 0
-    .db $4C, $4D, $4E, $4F  ; FRAME 1
-    .db $50, $51, $52, $53  ; FRAME 0 VFLIP
-    .db $54, $55, $56, $57  ; FRAME 1 VFLIP
+    .db $42, $43, $44, $45  ; FRAME 0
+    ;.db $4C, $4D, $4E, $4F  ; FRAME 1
+    .db $46, $47, $48, $49  ; FRAME 0 VFLIP
+    ;.db $54, $55, $56, $57  ; FRAME 1 VFLIP
 .ENDS
 
 .SECTION "Retainer/Princess Tiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
@@ -1322,17 +1370,17 @@ DefaultBlockObjTiles:
 DrawBlock:
     LD A, (Block_Rel_YPos)          ;get relative vertical coordinate of block object
     SUB A, SMS_PIXELYOFFSET
-    LD B, A ;LD (Temp_Bytes + $02), A        ;store here
+    LD B, A                         ;store here
 ;
     LD A, (Block_Rel_XPos)          ;get relative horizontal coordinate of block object
-    LD C, A ;LD (Temp_Bytes + $05), A        ;store here
+    LD C, A                         ;store here
 ;
     LD D, H
     DEC D                           ;Block_SprDataOffset
     
     LD E, <SprDataOffset            ;get sprite data offset
     LD A, (DE)
-    LD IYL, A ;LD (Temp_Bytes + $04), A
+    LD IYL, A
     LD E, A
 
     LD D, >Sprite_Y_Position
@@ -1350,8 +1398,6 @@ DrawBlock:
     CALL DrawSpriteObject
     POP HL
 ;
-    ;LD A, (Temp_Bytes + $04)
-    ;LD E, A
     LD D, >Sprite_Y_Position
     LD E, IYL
     LD A, (Block_OffscrBits)
@@ -1369,10 +1415,7 @@ PullOfsB:
     AND A, %00001000
     RET Z
 
-    ;LD A, (Temp_Bytes + $04)
-    ;LD E, A
     LD E, IYL
-;MoveColOffscreen:
     LD A, YPOS_OFFSCREEN
     LD (DE), A
     INC E
@@ -1395,11 +1438,27 @@ DrawBrickChunks:
 ;   STORE Y POSITIONS
     LD A, (Block_Rel_YPos)
     SUB A, SMS_PIXELYOFFSET
+    
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    JP NZ, +
+    INC A
++:
+    ; ---
+
     LD (DE), A
     INC E
     LD (DE), A
     LD A, (Block_Rel_YPos_01)
     SUB A, SMS_PIXELYOFFSET
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    JP NZ, +
+    INC A
++:
+    ; ---
+
     INC E
     LD (DE), A
     INC E
@@ -1515,6 +1574,12 @@ DrawFireball:
 ;
     LD A, (Fireball_Rel_YPos)
     SUB A, SMS_PIXELYOFFSET
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $C0
+    RET NC
+    ; ---
+
     LD (DE), A
 ;
     SLA E
@@ -2034,10 +2099,6 @@ NPROffscr:
 
 DrawPlayer_Intermediate:
     LD BC, $4060                        ;YPOS/XPOS
-    ;LD A, $40
-    ;LD (Temp_Bytes + $02), A            ;YPOS
-    ;LD A, $60
-    ;LD (Temp_Bytes + $05), A            ;XPOS
     LD HL, PlayerGfxBank
     RES 0, (HL)                         ;RIGHT-FACING SPRITES
 ;
@@ -2071,11 +2132,18 @@ RenderPlayerSub:
 ;
     LD A, (Player_Rel_XPos)
     LD (Player_Pos_ForScroll), A        ;store player's relative horizontal position
-    LD C, A ;LD (Temp_Bytes + $05), A            ;store it here also
+    LD C, A                             ;store it here also
 ;
     LD A, (Player_Rel_YPos)
     SUB A, SMS_PIXELYOFFSET
-    LD B, A ;LD (Temp_Bytes + $02), A            ;store player's vertical position
+
+    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
+    CP A, $D0
+    JP NZ, +
+    INC A
++:
+    ; ---
+    LD B, A                             ;store player's vertical position
     
 
 ;   X - PlayerFixedTiles (HL)
