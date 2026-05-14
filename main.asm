@@ -1546,7 +1546,12 @@ PrincessSaved1:
     ; .db $1a, $1e, $0e, $1c, $1d, $24
     ; .db $12, $1c, $24, $18, $1f, $0e, $1b, $af
     ; .db $00
-
+    .dw swapBytes(xyToNameTbl_M(7, 10))
+    .db StripeCount($26)
+    .dw $017B, $01F7, $017C, $01FB, $0000
+    .dw $0180, $017C, $01F4, $017F, $01F9, $0000
+    .dw $017D, $017F, $0000
+    .dw $01F7, $0181, $01F4, $01FB, $01E6
     .db $00
 .ENDS
 
@@ -1559,6 +1564,14 @@ PrincessSaved2:
     ; .db $22, $18, $1e, $24, $0a, $24, $17, $0e, $20, $24
     ; .db $1a, $1e, $0e, $1c, $1d, $af
     ; .db $00
+    .dw swapBytes(xyToNameTbl_M(3, 12))
+    .db StripeCount($36)
+    .dw $0142, $01F4, $0000
+    .dw $01FC, $01FB, $01F4, $017F, $01F4, $01FE, $01F9, $0000
+    .dw $017B, $01F7, $017C, $0000
+    .dw $01FA, $0000
+    .dw $01FE, $01F4, $0142, $0000
+    .dw $0180, $017C, $01F4, $017F, $01F9, $01E6
     .db $00
 .ENDS
 
@@ -1569,6 +1582,11 @@ WorldSelectMessage1:
     ; .db $19, $1e, $1c, $11, $24
     ; .db $0b, $1e, $1d, $1d, $18, $17, $24, $0b
     ; .db $00
+    .dw swapBytes(xyToNameTbl_M(10, 15))
+    .db StripeCount($1A)
+    .dw $01FC, $017C, $017F, $0179, $0000
+    .dw $017E, $017C, $01F9, $01F9, $01F7, $01FE, $0000
+    .dw $0139
     .db $00
 .ENDS
 
@@ -1579,6 +1597,12 @@ WorldSelectMessage2:
     ; .db $1d, $18, $24, $1c, $0e, $15, $0e, $0c, $1d, $24
     ; .db $0a, $24, $20, $18, $1b, $15, $0d
     ; .db $00
+    .dw swapBytes(xyToNameTbl_M(8, 17))
+    .db StripeCount($22)
+    .dw $01F9, $01F7, $0000
+    .dw $017F, $01F4, $01F5, $01F4, $01F6, $01F9, $0000
+    .dw $01FA, $0000
+    .dw $0142, $01F7, $01FB, $01F5, $0182
     .db $00
 .ENDS
 
