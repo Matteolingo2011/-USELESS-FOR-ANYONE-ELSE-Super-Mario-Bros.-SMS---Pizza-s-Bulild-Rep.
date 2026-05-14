@@ -1430,8 +1430,8 @@ CastlePaletteData:
 DaySnowPaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
-    .db $00, $00, $01, $16, $2B, $04, $18, $1C, $05, $0A, $3E, $0F, $2A, $3F, $3A, $3E
-    .db $00, $00, $01, $16, $2B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
+    .db $39, $00, $01, $16, $2B, $04, $18, $1C, $05, $0A, $3E, $0F, $2A, $3F, $3A, $3E
+    .db $39, $00, $01, $16, $2B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $00
 .ENDS
 
@@ -1446,10 +1446,11 @@ NightSnowPaletteData:
 
 .SECTION "Mushroom AreaType Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
 MushroomPaletteData:
-    ;.dw swapBytes($C000)
-    ;.db StripeCount($20)
+    .dw swapBytes($C005)
+    .db StripeCount($03)
     ;.db $00, $00, $01, $06, $0B, $04, $08, $0C, $05, $0A, $2E, $0F, $2A, $3F, $3A, $3E
     ;.db $00, $00, $01, $06, $0B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
+    .db $01, $02, $03
     .db $00
 .ENDS
 
@@ -1880,9 +1881,9 @@ Palette0_MTiles:
     .dw BG_MACRO($012D), BG_MACRO($012F), BG_MACRO($012D), BG_MACRO($0130)  ; middle
     .dw BG_MACRO($012D), BG_MACRO($012E), BG_MACRO($0131), BG_MACRO($0132)  ; right edge
     ; Mushroom Ledge
-    .dw BG_MACRO($093D), BG_MACRO($093E), BG_MACRO($093F), BG_MACRO($0940)  ; left edge
-    .dw BG_MACRO($0941), BG_MACRO($0942), BG_MACRO($0943), BG_MACRO($0944)  ; middle
-    .dw BG_MACRO($0945), BG_MACRO($0946), BG_MACRO($0947), BG_MACRO($0948)  ; right edge
+    .dw BG_MACRO($013D), BG_MACRO($013E), BG_MACRO($013F), BG_MACRO($0140)  ; left edge
+    .dw BG_MACRO($0141), BG_MACRO($0142), BG_MACRO($0143), BG_MACRO($0144)  ; middle
+    .dw BG_MACRO($0145), BG_MACRO($0146), BG_MACRO($0147), BG_MACRO($0148)  ; right edge
     ; Horizontal Pipe
     .dw BG_MACRO($116C), BG_MACRO($116D), BG_MACRO($116E), BG_MACRO($116F)  ; sideways pipe end top
     .dw BG_MACRO($1170), BG_MACRO($1171), BG_MACRO($1170), BG_MACRO($1171)  ; sideways pipe shaft top
@@ -1891,7 +1892,7 @@ Palette0_MTiles:
     .dw BG_MACRO($1178), BG_MACRO($1179), BG_MACRO($1178), BG_MACRO($1179)  ; sideways pipe shaft bottom
     .dw BG_MACRO($117A), BG_MACRO($117B), BG_MACRO($1169), BG_MACRO($1169)  ; sideways pipe joint bottom
     ; Seaplant
-    .dw $01CC, $01CD, $01CE, $01CF
+    .dw $01BB, $01BC, $01BD, $01BE
     ; Blank for bricks/blocks that are hit
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
     ; All-Stars Castle MTs
@@ -1916,28 +1917,28 @@ Palette0_MTiles:
     ; --- CLIMBABLE METATILES START HERE ---
     ; Flagpole
     .dw BLANKTILE, BG_MACRO($017C), BLANKTILE, BG_MACRO($017D)              ; ball
-    .dw BG_MACRO($0154), BG_MACRO($0154), BG_MACRO($0155), BG_MACRO($0155)  ; shaft
+    .dw BG_MACRO($015A), BG_MACRO($015A), BG_MACRO($015B), BG_MACRO($015B)  ; shaft
     ; Blank for vines
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
 
 Palette1_MTiles:
     ; Rope
     .dw BG_MACRO($0154), BG_MACRO($0154), BG_MACRO($0155), BG_MACRO($0155)  ; vertical
-    .dw BG_MACRO($0959), BLANKTILE, BG_MACRO($0959), BLANKTILE              ; horizontal
+    .dw BG_MACRO($0158), BLANKTILE, BG_MACRO($0158), BLANKTILE              ; horizontal
     ; Pulley
-    .dw BLANKTILE, BG_MACRO($0956), BG_MACRO($0957), BG_MACRO($0958)        ; left
-    .dw BG_MACRO($0B57), BG_MACRO($095A), BLANKTILE, BG_MACRO($095B)        ; right
+    .dw BLANKTILE, BG_MACRO($0154), BG_MACRO($0156), BG_MACRO($0157)        ; left
+    .dw BG_MACRO($0356), BG_MACRO($0159), BLANKTILE, BG_MACRO($0155)        ; right
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE                          ; blank used for balance rope
     ; Castle
     .dw BG_MACRO($118B), BG_MACRO($11A4), BG_MACRO($118C), BG_MACRO($11A4)  ; top (PRI)
     .dw BG_MACRO($018B), BG_MACRO($01A4), BG_MACRO($018C), BG_MACRO($01A4)  ; top (NON PRI)
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($0191), BG_MACRO($0191)  ; window left
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; brick wall
-    .dw BG_MACRO($0192), BG_MACRO($0192), BG_MACRO($0193), BG_MACRO($0193)  ; window right
+    .dw BG_MACRO($0191), BG_MACRO($0191), BG_MACRO($01A4), BG_MACRO($01A4)  ; window right
     .dw BG_MACRO($118D), BG_MACRO($11A4), BG_MACRO($118E), BG_MACRO($11A4)  ; top with brick (PRI)
     .dw BG_MACRO($018D), BG_MACRO($01A4), BG_MACRO($018E), BG_MACRO($01A4)  ; top with brick (NON PRI)
-    .dw BG_MACRO($018F), BG_MACRO($0192), BG_MACRO($0190), BG_MACRO($0192)  ; entry top
-    .dw BG_MACRO($0192), BG_MACRO($0192), BG_MACRO($0192), BG_MACRO($0192)  ; entry bottom
+    .dw BG_MACRO($018F), BG_MACRO($0191), BG_MACRO($0190), BG_MACRO($0191)  ; entry top
+    .dw BG_MACRO($0191), BG_MACRO($0191), BG_MACRO($0191), BG_MACRO($0191)  ; entry bottom
     .dw BG_MACRO($11A4), BG_MACRO($11A4), BG_MACRO($11A4), BG_MACRO($11A4)  ; brick wall PRIORITY (NEW)
     ; Tree Ledge Stump
     .dw BG_MACRO($0135), BG_MACRO($0139), BG_MACRO($0134), BG_MACRO($0138)  ; STUMP CENTER TOP
@@ -1957,18 +1958,18 @@ Palette1_MTiles:
     .dw BG_MACRO($014A), BG_MACRO($014A), BG_MACRO($034A), BG_MACRO($034A)  ; bottom
     ; --- METATILES WITH COLLISION START HERE ---
     ; Breakable bricks
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; shiny
+    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; normal
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; unused
     ; Rock Terrain
     .dw BG_MACRO($019C), BG_MACRO($019D), BG_MACRO($019E), BG_MACRO($019F)
     .dw BG_MACRO($119C), BG_MACRO($119D), BG_MACRO($119E), BG_MACRO($119F)  ; rock PRIORITY (NEW)
     ; Bricks with something in them
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; shiny with Power-UP
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; shiny with Vine
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; shiny with Star
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; shiny with Coins
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; shiny with 1-UP
+    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny with Power-UP
+    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny with Vine
+    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny with Star
+    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny with Coins
+    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny with 1-UP
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; normal with Power-UP
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; normal with Vine
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; normal with Star
@@ -1985,14 +1986,14 @@ Palette1_MTiles:
     ; Bridge
     .dw BG_MACRO($017E), BLANKTILE, BG_MACRO($017E), BLANKTILE
     ; Bullet Bill
-    .dw BG_MACRO($114B), BG_MACRO($114C), BG_MACRO($134B), BG_MACRO($114D)  ; barrel
+    .dw BG_MACRO($114B), BG_MACRO($114C), BG_MACRO($115C), BG_MACRO($114D)  ; barrel
     .dw BG_MACRO($014E), BG_MACRO($014F), BG_MACRO($0150), BG_MACRO($0151)  ; top
     .dw BG_MACRO($0152), BG_MACRO($0152), BG_MACRO($0153), BG_MACRO($0153)  ; bottom
     ; Jumpspring
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE                          ; blank for jumpspring
     .dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)              ; half brick 
     ; Solid brick for water levels
-    .dw $01D0, $01D1, $01D2, $01D3
+    .dw $01BF, $01C0, $01C1, $01C2
     ; Half brick (unused?)
     .dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)
     ; Water pipe

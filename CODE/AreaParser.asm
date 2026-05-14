@@ -1802,8 +1802,7 @@ BrickMetatiles:
 .ENDS
 
 RowOfBricks:
-    LD DE, AreaType
-    LD A, (DE)                          ;load area type obtained from area offset pointer
+    LD A, (AreaType)                    ;load area type obtained from area offset pointer
     LD C, A
     LD A, (CloudTypeOverride)           ;check for cloud type override
     OR A

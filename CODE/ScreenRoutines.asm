@@ -504,7 +504,7 @@ WaterAreaSetup:
     LD A, :Tiles_BG_Water
     LD (MAPPER_SLOT2), A
     LD HL, Tiles_BG_Water
-    LD DE, $3280 | VRAMWRITE
+    LD DE, $3300 | VRAMWRITE
     CALL zx7_decompressVRAM
     ; LOAD WATER CASTLE TILES IF ON W8-4
     LD A, (WorldNumber)

@@ -1385,8 +1385,8 @@ PrincessTilesRight:
 
 .SECTION "DefaultBlockObjTiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 DefaultBlockObjTiles:
-    ;.db $85, $85, $86, $86             ;brick w/ line (these are sprite tiles, not BG!)
     .db $3B, $3B, $3B, $3B              ;breakable block
+    .db $42, $42, $3B, $3B              ;brick w/ line (these are sprite tiles, not BG!)
     .db $37, $38, $39, $3A              ;empty block
 .ENDS
 
@@ -1409,12 +1409,17 @@ DrawBlock:
     LD D, >Sprite_Y_Position
     PUSH HL
 ;
+    LD A, (AreaType)
+    DEC A
     LD L, <Block_Metatile
     LD A, (HL)
-    CP A, MT_EMPTYBLK
     LD HL, DefaultBlockObjTiles
     JP NZ, +
     LD L, <DefaultBlockObjTiles + $04
++:
+    CP A, MT_EMPTYBLK
+    JP NZ, +
+    LD L, <DefaultBlockObjTiles + $08
 ;
 +:
     CALL DrawSpriteObject
