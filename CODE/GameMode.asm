@@ -1740,7 +1740,11 @@ RunRetainerObj:
 RunRetainerObj_NOPOP:
     CALL GetEnemyOffscreenBits
     CALL RelativeEnemyPosition
-    JP RetainerGfxHandler
+    LD A, (Enemy_OffscrBits)
+    BIT 2, A
+    CALL Z, RetainerGfxHandler
+    LD HL, (ObjectOffset)
+    RET
 
 ;--------------------------------
 
@@ -3161,13 +3165,11 @@ SPixelLak:
 BridgeCollapseData:
     .dw $6374   ;axe
     .dw $63F0   ;chain
-    .dw $6370, $646C, $6468, $6464, $6460, $645C, $6458 ; bridge
+    .dw $6470, $646C, $6468, $6464, $6460, $645C, $6458 ; bridge
     .dw $6454, $6450, $644C, $6448, $6444, $6440
 .ENDS
 
 BridgeCollapse:
-    POP HL
-;
     LD HL, (BowserFront_Offset - 1)
     LD L, <Enemy_ID
     LD A, (HL)
@@ -3216,8 +3218,9 @@ RemoveBridge:
     ADD A, A
     LD HL, BridgeCollapseData
     addAToHL8_M
-    LDI
-    LDI
+    LD C, (HL)
+    INC L
+    LD B, (HL)
     LD HL, BlockGfxData + $18
     CALL RemBridge
 ;
@@ -5283,6 +5286,7 @@ PutBlockMetatile:
     LD C, A
     LD B, H
     LD H, >BlockGfxData
+RemBridge:
 ;   WRITE VRAM BUFFER (VDP ADDRESS)
     LD A, B
     LD (DE), A  ; HIGH BYTE
@@ -5290,7 +5294,6 @@ PutBlockMetatile:
     LD A, C
     LD (DE), A  ; LOW BYTE
     INC E
-RemBridge:
 ;   WRITE VRAM BUFFER (COUNT)
     LD A, StripeCount($04)
     LD (DE), A

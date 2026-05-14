@@ -1171,19 +1171,6 @@ PodobooGfxHandler:
     LD HL, PodobooTiles
     JP M, +
     LD L, <PodobooTiles + $04
-;   ANIMATE ADJUST
-+:
-    ; LD A, (FrameCounter)
-    ; AND A, $08
-    ; JP NZ, +
-    ; LD A, (TimerControl)
-    ; LD C, A
-    ; LD A, IYL
-    ; AND A, %10100000
-    ; OR A, C
-    ; JP NZ, +
-    ; LD A, $04
-    ; addAToHL8_M
 ;   DRAW SPRITE
 +:
     LD A, D
@@ -1207,16 +1194,37 @@ PodobooGfxHandler:
     JP SprObjectOffscrChk
 
 RetainerGfxHandler:
-    LD HL, RetainerPrincessTiles
-;   DRAW SPRITE
-    LD B, D
-    LD A, (Temp_Bytes + $05)
-    LD C, A
-    LD D, >Sprite_Y_Position
-    CALL DrawSpriteObject
-    CALL DrawSpriteObject
-    CALL DrawSpriteObject
-    JP SprObjectOffscrChk
+    LD A, (RetainerDrawnFlag)
+    OR A
+    RET NZ
+    INC A
+    LD (RetainerDrawnFlag), A
+;
+    CALL CalculateNTAddr
+;
+    INC L
+    INC L
+    PUSH HL
+    CALL StripeBufferSetup
+    LD A, (WorldNumber)
+    CP A, WORLD8
+    LD HL, RetainerTilesRight + $05
+    JP NZ, +
+    LD HL, PrincessTilesRight + $05
++:
+    CALL NTObjectDrawSide
+    POP HL
+;
+    DEC L
+    DEC L
+    CALL StripeBufferSetup
+    LD A, (WorldNumber)
+    CP A, WORLD8
+    LD HL, RetainerTilesLeft + $05
+    JP NZ, +
+    LD HL, PrincessTilesLeft + $05
++:
+    JP NTObjectDrawSide
 
 JumpspringGfxHandler:
     LD A, (JumpspringAnimCtrl_Old)
@@ -1226,8 +1234,51 @@ JumpspringGfxHandler:
     RET Z
     LD (JumpspringAnimCtrl_Old), A
 ;
-    LD DE, (VRAM_Buffer1_Ptr)
+    CALL CalculateNTAddr
 ;
+    INC L
+    INC L
+    PUSH HL
+    CALL StripeBufferSetup
+    LD HL, JumpspringFramesRight + $05
+    LD A, (JumpspringAnimCtrl)
+    ADD A, A
+    ADD A, A
+    ADD A, A
+    addAToHL8_M
+    CALL NTObjectDrawSide
+    POP HL
+;
+    LD A, (Enemy_OffscrBits)
+    BIT 3, A
+    RET NZ
+    DEC L
+    DEC L
+    CALL StripeBufferSetup
+    LD HL, JumpspringFramesLeft + $05
+    LD A, (JumpspringAnimCtrl)
+    ADD A, A
+    ADD A, A
+    ADD A, A
+    addAToHL8_M
+    ; FALL THROUGH
+
+NTObjectDrawSide:
+    LDD
+    LDD
+    DEC E
+    DEC E
+    DEC E
+    LDD
+    LDD
+    DEC E
+    DEC E
+    DEC E
+    LDD
+    LDD
+    RET
+
+CalculateNTAddr:
     LD L, <Enemy_Y_Position                 ;get enemy object vertical position
     LD A, (HL)
     SUB A, SMS_PIXELYOFFSET
@@ -1246,21 +1297,9 @@ JumpspringGfxHandler:
     RRCA
     OR A, L
     LD L, A
-;
-    INC L
-    INC L
-    LD BC, JumpspringFramesRight + $05
-    CALL JSDrawSide
-;
-    LD A, (Enemy_OffscrBits)
-    BIT 3, A
-    RET NZ
-    DEC L
-    DEC L
-    LD BC, JumpspringFramesLeft + $05
+    RET
 
-JSDrawSide:
-    PUSH HL
+StripeBufferSetup:
     LD DE, (VRAM_Buffer1_Ptr)
     EX DE, HL
 ;
@@ -1298,29 +1337,6 @@ JSDrawSide:
     LD (VRAM_Buffer1_Ptr), HL
     DEC L
     EX DE, HL
-;
-    LD A, (JumpspringAnimCtrl)
-    ADD A, A
-    ADD A, A
-    ADD A, A
-    addAToBC8_M
-    LD L, C
-    LD H, B
-;
-    LDD
-    LDD
-    DEC E
-    DEC E
-    DEC E
-    LDD
-    LDD
-    DEC E
-    DEC E
-    DEC E
-    LDD
-    LDD
-;
-    POP HL
     RET
 
 .SECTION "Jumpspring Frames" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
@@ -1342,14 +1358,21 @@ JumpspringFramesRight:
 .SECTION "Podoboo Tiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 PodobooTiles:
     .db $42, $43, $44, $45  ; FRAME 0
-    ;.db $4C, $4D, $4E, $4F  ; FRAME 1
     .db $46, $47, $48, $49  ; FRAME 0 VFLIP
-    ;.db $54, $55, $56, $57  ; FRAME 1 VFLIP
 .ENDS
 
 .SECTION "Retainer/Princess Tiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
-RetainerPrincessTiles:
-    .db $42, $43, $44, $45, $46, $47
+RetainerTilesLeft:
+    .dw $0983, $0984, $0985
+
+RetainerTilesRight:
+    .dw $0B83, $0B84, $0B85
+
+PrincessTilesLeft:
+    .dw $0186, $0187, $0188
+
+PrincessTilesRight:
+    .dw $0189, $018A, $018B
 .ENDS
 
 ;-------------------------------------------------------------------------------------

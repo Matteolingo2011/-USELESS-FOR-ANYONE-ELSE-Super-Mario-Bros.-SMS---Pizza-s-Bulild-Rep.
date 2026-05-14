@@ -403,6 +403,9 @@ InitPodoboo_NOPOP:
 InitRetainerObj:
     POP HL
 ;
+    XOR A
+    LD (RetainerDrawnFlag), A
+;
     LD L, <Enemy_Y_Position         ;set fixed vertical position for
     LD (HL), $B8                    ;princess/mushroom retainer object
     RET
@@ -1001,9 +1004,26 @@ InitBowser:
     SRL A
     LD (BowserMovementSpeed), A
 ;
-    LD A, VRAMTBL_BOWSERPAL             ;load bowser's palette into sprite portion of palette
-    LD (VRAM_Buffer_AddrCtrl), A
+    LD DE, BowserPaletteData
+    LD HL, (VRAM_Buffer1_Ptr)
+    LD (HL), $C0
+    INC L
+    LD (HL), $10
+    INC L
+    LD (HL), StripeCount($10)
+    INC L
+    EX DE, HL
+    LD BC, $10
+    LDIR
+    XOR A
+    LD (DE), A
+    LD HL, (ObjectOffset)
     RET
+
+.SECTION "Bowser Palette Data (All-Stars)" BANK BANK_SLOT2 SLOT 2 FREE
+BowserPaletteData:
+    .db $00, $00, $04, $15, $2A, $24, $0E, $06, $1B, $0F, $07, $3F, $03, $02, $10, $09
+.ENDS
 
 ;--------------------------------
 

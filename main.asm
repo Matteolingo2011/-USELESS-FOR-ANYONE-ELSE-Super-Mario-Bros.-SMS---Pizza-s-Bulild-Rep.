@@ -328,11 +328,11 @@ NMIWait:
 VRAM_AddrTable:
     .dw VRAM_Buffer1, WaterPaletteData, GroundPaletteData,
     .dw UndergroundPaletteData, CastlePaletteData, TitleScreenData
-    .dw VRAM_Buffer2, VRAM_Buffer2, BowserPaletteData                   ; Second VRAM_Buffer2 is never used?
+    .dw VRAM_Buffer2, VRAM_Buffer2, VRAM_Buffer2                   ; Second VRAM_Buffer2 is never used?
     .dw DaySnowPaletteData, NightSnowPaletteData, MushroomPaletteData
     .dw MarioThanksMessage, LuigiThanksMessage, MushroomRetainerSaved
     .dw PrincessSaved1, PrincessSaved2, WorldSelectMessage1
-    .dw WorldSelectMessage2
+    .dw WorldSelectMessage2, RetainerPaletteData, PrincessPaletteData
 .ENDS
 
 NonMaskableInterrupt:
@@ -1453,83 +1453,131 @@ MushroomPaletteData:
     .db $00
 .ENDS
 
-.SECTION "Bowser Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
-BowserPaletteData:
+; .SECTION "Bowser Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
+; BowserPaletteData:
+    ; .dw swapBytes($C010)
+    ; .db StripeCount($10)
+    ; .db $00, $00, $04, $15, $2A, $24, $0E, $06, $1B, $0F, $07, $3F, $03, $02, $10, $09
+    ; .db $00
+; .ENDS
+
+.SECTION "Retainer Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
+RetainerPaletteData:
     .dw swapBytes($C010)
     .db StripeCount($10)
-    .db $00, $00, $04, $15, $2A, $24, $0E, $06, $1B, $0F, $07, $3F, $03, $02, $10, $09
+    .db $00, $00, $01, $32, $3A, $24, $0E, $06, $1B, $0F, $17, $3F, $03, $02, $10, $09
+    .db $00
+.ENDS
+
+
+.SECTION "Princess Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
+PrincessPaletteData:
+    .dw swapBytes($C010)
+    .db StripeCount($10)
+    .db $00, $00, $13, $07, $3B, $24, $0E, $06, $1B, $0F, $2B, $3F, $03, $02, $10, $09
     .db $00
 .ENDS
 
 .SECTION "'Thank You Mario' MSG Data" BANK BANK_SLOT2 SLOT 2 FREE
 MarioThanksMessage:
 ;"THANK YOU MARIO!"
-    .db $25, $48, $10
-    .db $1d, $11, $0a, $17, $14, $24
-    .db $22, $18, $1e, $24
-    .db $16, $0a, $1b, $12, $18, $2b
+    ; .db $25, $48, $10
+    ; .db $1d, $11, $0a, $17, $14, $24
+    ; .db $22, $18, $1e, $24
+    ; .db $16, $0a, $1b, $12, $18, $2b
+    ; .db $00
+    .dw swapBytes(xyToNameTbl_M(8, 7))
+    .db StripeCount($20)
+    .dw $01F9, $0179, $01FA, $01FE, $017A, $0000
+    .dw $017B, $01F7, $017C, $0000
+    .dw $01F8, $01FA, $01FB, $017D, $01F7, $01FF
     .db $00
 .ENDS
 
 .SECTION "'Thank You Luigi' MSG Data" BANK BANK_SLOT2 SLOT 2 FREE
 LuigiThanksMessage:
 ;"THANK YOU LUIGI!"
-    .db $25, $48, $10
-    .db $1d, $11, $0a, $17, $14, $24
-    .db $22, $18, $1e, $24
-    .db $15, $1e, $12, $10, $12, $2b
+    ; .db $25, $48, $10
+    ; .db $1d, $11, $0a, $17, $14, $24
+    ; .db $22, $18, $1e, $24
+    ; .db $15, $1e, $12, $10, $12, $2b
+    ; .db $00
+    .dw swapBytes(xyToNameTbl_M(8, 7))
+    .db StripeCount($20)
+    .dw $01F9, $0179, $01FA, $01FE, $017A, $0000
+    .dw $017B, $01F7, $017C, $0000
+    .dw $01F5, $017C, $017D, $01E7, $017D, $01FF
     .db $00
 .ENDS
 
 .SECTION "Mushroom Retainer MSG Data" BANK BANK_SLOT2 SLOT 2 FREE
 MushroomRetainerSaved:
 ;"BUT OUR PRINCESS IS IN"
-    .db $25, $c5, $16
-    .db $0b, $1e, $1d, $24, $18, $1e, $1b, $24
-    .db $19, $1b, $12, $17, $0c, $0e, $1c, $1c, $24
-    .db $12, $1c, $24, $12, $17
+;     .db $25, $c5, $16
+;     .db $0b, $1e, $1d, $24, $18, $1e, $1b, $24
+;     .db $19, $1b, $12, $17, $0c, $0e, $1c, $1c, $24
+;     .db $12, $1c, $24, $12, $17
+; ;"ANOTHER CASTLE!"
+;     .db $26, $05, $0f
+;     .db $0a, $17, $18, $1d, $11, $0e, $1b, $24
+;     .db $0c, $0a, $1c, $1d, $15, $0e, $2b, $00
+;"BUT OUR PRINCESS IS IN"
+    .dw swapBytes(xyToNameTbl_M(5, 11))
+    .db StripeCount($2C)
+    .dw $017E, $017C, $01F9, $0000
+    .dw $01F7, $017C, $01FB, $0000
+    .dw $01FC, $01FB, $017D, $01FE, $01F6, $01F4, $017F, $017F, $0000
+    .dw $017D, $017F, $0000
+    .dw $017D, $01FE
 ;"ANOTHER CASTLE!"
-    .db $26, $05, $0f
-    .db $0a, $17, $18, $1d, $11, $0e, $1b, $24
-    .db $0c, $0a, $1c, $1d, $15, $0e, $2b, $00
+    .dw swapBytes(xyToNameTbl_M(5, 13))
+    .db StripeCount($1E)
+    .dw $01FA, $01FE, $01F7, $01F9, $0179, $01F4, $01FB, $0000
+    .dw $01F6, $01FA, $017F, $01F9, $01F5, $01F4, $01FF
+    .db $00
 .ENDS
 
 .SECTION "Princess Saved MSG 1 Data" BANK BANK_SLOT2 SLOT 2 FREE
 PrincessSaved1:
 ;"YOUR QUEST IS OVER."
-    .db $25, $a7, $13
-    .db $22, $18, $1e, $1b, $24
-    .db $1a, $1e, $0e, $1c, $1d, $24
-    .db $12, $1c, $24, $18, $1f, $0e, $1b, $af
+    ; .db $25, $a7, $13
+    ; .db $22, $18, $1e, $1b, $24
+    ; .db $1a, $1e, $0e, $1c, $1d, $24
+    ; .db $12, $1c, $24, $18, $1f, $0e, $1b, $af
+    ; .db $00
+
     .db $00
 .ENDS
 
 .SECTION "Princess Saved MSG 2 Data" BANK BANK_SLOT2 SLOT 2 FREE
 PrincessSaved2:
 ;"WE PRESENT YOU A NEW QUEST."
-    .db $25, $e3, $1b
-    .db $20, $0e, $24
-    .db $19, $1b, $0e, $1c, $0e, $17, $1d, $24
-    .db $22, $18, $1e, $24, $0a, $24, $17, $0e, $20, $24
-    .db $1a, $1e, $0e, $1c, $1d, $af
+    ; .db $25, $e3, $1b
+    ; .db $20, $0e, $24
+    ; .db $19, $1b, $0e, $1c, $0e, $17, $1d, $24
+    ; .db $22, $18, $1e, $24, $0a, $24, $17, $0e, $20, $24
+    ; .db $1a, $1e, $0e, $1c, $1d, $af
+    ; .db $00
     .db $00
 .ENDS
 
 .SECTION "World Select MSG 1 Data" BANK BANK_SLOT2 SLOT 2 FREE
 WorldSelectMessage1:
 ;"PUSH BUTTON B"
-    .db $26, $4a, $0d
-    .db $19, $1e, $1c, $11, $24
-    .db $0b, $1e, $1d, $1d, $18, $17, $24, $0b
+    ; .db $26, $4a, $0d
+    ; .db $19, $1e, $1c, $11, $24
+    ; .db $0b, $1e, $1d, $1d, $18, $17, $24, $0b
+    ; .db $00
     .db $00
 .ENDS
 
 .SECTION "World Select MSG 2 Data" BANK BANK_SLOT2 SLOT 2 FREE
 WorldSelectMessage2:
 ;"TO SELECT A WORLD"
-    .db $26, $88, $11
-    .db $1d, $18, $24, $1c, $0e, $15, $0e, $0c, $1d, $24
-    .db $0a, $24, $20, $18, $1b, $15, $0d
+    ; .db $26, $88, $11
+    ; .db $1d, $18, $24, $1c, $0e, $15, $0e, $0c, $1d, $24
+    ; .db $0a, $24, $20, $18, $1b, $15, $0d
+    ; .db $00
     .db $00
 .ENDS
 

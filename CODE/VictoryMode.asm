@@ -1,18 +1,15 @@
 ;-------------------------------------------------------------------------------------
 
 VictoryMode:
-    RET
-/*
     CALL VictoryModeSubroutines     ;run victory mode subroutines
     LD A, (OperMode_Task)           ;get current task of victory mode
     OR A
     JP Z, @AutoPlayer               ;if on bridge collapse, skip enemy processing
-    XOR A
-    LD (ObjectOffset), A            ;otherwise reset enemy object offset 
-    LD B, A
+    LD H, >Enemy_ID
+    LD (ObjectOffset), HL           ;otherwise reset enemy object offset 
     CALL EnemiesAndLoopsCore        ;and run enemy code
 @AutoPlayer:
-    CALL RelativePlayerPosition     ;get player's relative coordinates
+    RelativePlayerPosition_M        ;get player's relative coordinates
     JP PlayerGfxHandler             ;draw the player, then leave
 
 VictoryModeSubroutines:
@@ -31,8 +28,18 @@ SetupVictoryMode:
     LD A, (ScreenRight_PageLoc)     ;get page location of right side of screen
     INC A                           ;increment to next page
     LD (DestinationPageLoc), A      ;store here
-    LD A, EndOfCastleMusic
-    LD (EventMusicQueue), A         ;play win castle music
+;  
+    LD A, SNDID_WORLDDONE
+    LD (MusicTrack0.SoundQueue), A  ;play win castle music (EVENT)
+;
+    LD A, (WorldNumber)
+    CP A, WORLD8
+    LD A, VRAMTBL_RETAINERPAL
+    JP NZ, +
+    INC A
++:
+    LD (VRAM_Buffer_AddrCtrl), A
+;
     JP IncModeTask_B                ;jump to set next major task in victory mode
 
 ;-------------------------------------------------------------------------------------
@@ -81,14 +88,16 @@ PrintVictoryMessages:
     LD A, (SecondaryMsgCounter)     ;load secondary message counter
     OR A
     JP NZ, @IncMsgCounter           ;if set, branch to increment message counters
+;
     LD A, (PrimaryMsgCounter)       ;otherwise load primary message counter
     OR A
     JP Z, @ThankPlayer              ;if set to zero, branch to print first message
+;
     ;CP A, $09                       ;if at 9 or above, branch elsewhere (this comparison
     ;JP NC, @IncMsgCounter           ;is residual code, counter never reaches 9)
     LD E, A
     LD A, (WorldNumber)             ;check world number
-    CP A, World8
+    CP A, WORLD8
     LD A, E
     JP NZ, @MRetainerMsg            ;if not at world 8, skip to next part
     CP A, $03                       ;check primary message counter again
@@ -110,7 +119,7 @@ PrintVictoryMessages:
 @SecondPartMsg:
     INC C                           ;increment Y to do world 8's message
     LD A, (WorldNumber)
-    CP A, World8                    ;check world number
+    CP A, WORLD8                    ;check world number
     JP Z, @EvalForMusic             ;if at world 8, branch to next part
     DEC C                           ;otherwise decrement Y for world 1-7's message
     LD A, C
@@ -121,9 +130,9 @@ PrintVictoryMessages:
 @EvalForMusic:
     LD A, C
     CP A, $03                       ;if counter not yet at 3 (world 8 only), branch
-    JP NZ, @PrintMsg                ;to print message only (note world 1-7 will only
-    LD A, VictoryMusic              ;reach this code if counter = 0, and will always branch)
-    LD (EventMusicQueue), A         ;otherwise load victory music first (world 8 only)
+    JP NZ, @PrintMsg                ;to print message only (note world 1-7 will only    
+    LD A, SNDID_GAMEDONE            ;reach this code if counter = 0, and will always branch)
+    LD (MusicTrack0.SoundQueue), A  ;otherwise load victory music first (world 8 only)
 @PrintMsg:
     LD A, C                         ;put primary message counter in A
     ADD A, $0C                      ;add $0c or 12 to counter thus giving an appropriate value, ($0c-$0d = first), ($0e = world 1-7's), ($0f-$12 = world 8's)
@@ -151,9 +160,11 @@ PlayerEndWorld:
     LD A, (WorldEndTimer)           ;check to see if world end timer expired
     OR A
     RET NZ                          ;branch to leave if not
+;
     LD A, (WorldNumber)             ;check world number
-    CP A, World8                    ;if on world 8, player is done with game, 
+    CP A, WORLD8                    ;if on world 8, player is done with game, 
     JP NC, @EndChkBButton           ;thus branch to read controller
+;
     XOR A
     LD (AreaNumber), A              ;otherwise initialize area number used as offset
     LD (LevelNumber), A             ;and level number control to start at area 1
@@ -166,6 +177,7 @@ PlayerEndWorld:
     LD A, MODE_GAMEPLAY
     LD (OperMode), A                ;set mode of operation to game mode
     RET                             ;and leave
+;
 @EndChkBButton:
     LD A, (SavedJoypad1Bits)
     LD HL, SavedJoypad2Bits         ;check to see if B button was pressed on
@@ -178,6 +190,4 @@ PlayerEndWorld:
     LD (NumberofLives), A
     JP TerminateGame                ;do sub to continue other player or end game
 
-
 ;-------------------------------------------------------------------------------------
-*/
