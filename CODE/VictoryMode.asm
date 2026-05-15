@@ -2,6 +2,7 @@
 
 VictoryMode:
     CALL VictoryModeSubroutines     ;run victory mode subroutines
+    CALL ColorRotation              ;update tile animations
     LD A, (OperMode_Task)           ;get current task of victory mode
     OR A
     JP Z, @AutoPlayer               ;if on bridge collapse, skip enemy processing
