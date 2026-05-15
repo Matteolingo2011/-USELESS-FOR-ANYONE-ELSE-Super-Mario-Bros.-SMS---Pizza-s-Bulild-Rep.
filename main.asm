@@ -1447,10 +1447,10 @@ NightSnowPaletteData:
 .SECTION "Mushroom AreaType Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
 MushroomPaletteData:
     .dw swapBytes($C005)
-    .db StripeCount($03)
+    .db StripeCount($06)
     ;.db $00, $00, $01, $06, $0B, $04, $08, $0C, $05, $0A, $2E, $0F, $2A, $3F, $3A, $3E
     ;.db $00, $00, $01, $06, $0B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
-    .db $01, $02, $03
+    .db $01, $02, $03, $05, $0A, $2B
     .db $00
 .ENDS
 
