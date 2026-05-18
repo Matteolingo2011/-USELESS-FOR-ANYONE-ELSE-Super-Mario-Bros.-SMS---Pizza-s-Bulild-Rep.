@@ -170,17 +170,36 @@ Start:
     LD (IX + 3), $02    ; BANK SELECT FOR SLOT 2
 ;   MUTE PSG CHANNELS
     CALL SndStopAll@WritePSG
+;   RESET GRAPHIC & SOUND BITFLAGS
+    XOR A
+    ;LD A, $01
+    LD (OptionBitflags), A
+
+
+;
+    LD A, (OptionBitflags)
+    OR A
+    JP NZ, +
+    LD HL, AnimateBGTiles
+    LD (AnimateRoutine), HL
+    LD HL, BowserGfxDraw
+    LD (BowserDrawRoutine), HL
+    JP LoadConstantTiles
++:
+    LD HL, ColorRotation
+    LD (AnimateRoutine), HL
+    LD HL, BowserGfxDraw_NES
+    LD (BowserDrawRoutine), HL
+LoadConstantTiles:
 ;   LOAD CONSTANT BACKGROUND TILES
-    LD A, :Tiles_BG_Comm
-    LD (MAPPER_SLOT2), A 
-    LD HL, Tiles_BG_Comm
-    LD DE, VRAM_ADR_BG_COMM | VRAMWRITE
+    LD A, ASSET_BGCOMM
+    CALL AssetLoader
+    LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
 ;   LOAD (mostly) CONSTANT SPRITE TILES
-    LD A, :Tiles_SPR_Comm
+    LD A, ASSET_SPRCOMM
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_SPR_Comm
-    LD DE, VRAM_ADR_SPR_COMM | VRAMWRITE
     CALL zx7_decompressVRAM
 ;   SET DEFAULT BANK FOR SLOT 2
     LD A, BANK_SLOT2
@@ -333,6 +352,11 @@ VRAM_AddrTable:
     .dw MarioThanksMessage, LuigiThanksMessage, MushroomRetainerSaved
     .dw PrincessSaved1, PrincessSaved2, WorldSelectMessage1
     .dw WorldSelectMessage2, RetainerPaletteData, PrincessPaletteData
+    ;
+    .dw VRAM_Buffer1, WaterPaletteData_NES, GroundPaletteData_NES
+    .dw UndergroundPaletteData_NES, CastlePaletteData_NES, TitleScreenData_NES
+    .dw VRAM_Buffer2, VRAM_Buffer2, VRAM_Buffer2
+    .dw DaySnowPaletteData_NES, NightSnowPaletteData_NES, MushroomPaletteData_NES 
 .ENDS
 
 NonMaskableInterrupt:
@@ -601,6 +625,9 @@ WriteVertColumnBuff2:
 ;   WRITE 23 WORDS VERTICALLY
     JP WriteVeriBlock_W ;- 11 * 23   ; 11 bytes per word
 
+IndirectCallHL:
+    JP (HL)
+
 IndirectCallIX:
     JP (IX)
 
@@ -762,10 +789,15 @@ InitializeMemory:
 ;
     LD HL, VRAM_Buffer1
     LD (VRAM_Buffer1_Ptr), HL
-    LD A, BANK_PLAYERGFX00
-    LD (PlayerGfxBank), A
     LD HL, PlayerGraphicsTable@smlStand
     LD (PlayerGfxOffset), HL
+    LD A, (OptionBitflags)
+    AND A, $01
+    LD A, BANK_PLAYERGFX00
+    JP Z, +
+    LD A, BANK_PLAYERGFX04
++:
+    LD (PlayerGfxBank), A
 ;
     JP SndInitMemory@InitChanBits
 ;-------------------------------------------------------------------------------------
@@ -1202,6 +1234,11 @@ StreamPlayerTiles:
 ;   HL
 ;   IXL
 StreamAnimatedBGTiles:
+;   EXIT IF ON NES GFX
+    LD A, (OptionBitflags)
+    AND A, $01
+    RET NZ
+;
     LD C, VDPCON_PORT
     LD IXH, >OutiBlock128
 ;   SLOT 0 (4 or less) [MAX CYCLES: 2235]
@@ -1288,6 +1325,150 @@ StreamAnimatedBGTiles:
     ; WRITE TO VRAM
     CALL OutiBlock128
     JP OutiBlock128 + $80
+
+;-------------------------------------------------------------------------------------
+
+;   ASSET BANK, DATA ADDRESS, VRAM ADDRESS
+
+.SECTION "Asset Table for All-Star GFX" BANK BANK_CODE SLOT 0 BITWINDOW 8
+
+AssetLoaderTable:
+    .db :Tiles_BG_Comm
+    .dw Tiles_BG_Comm, VRAM_ADR_BG_COMM | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Comm
+    .dw Tiles_SPR_Comm, VRAM_ADR_SPR_COMM | VRAMWRITE
+    ;
+    .db :Tiles_BG_Inter
+    .dw Tiles_BG_Inter, VRAM_ADR_BG_INTER | VRAMWRITE
+    ;
+    .db :Tiles_BG_TitleScreen
+    .dw Tiles_BG_TitleScreen, VRAM_ADR_BG_TITLE | VRAMWRITE
+    ;
+    .db :Tiles_Mario_Emblem
+    .dw Tiles_Mario_Emblem, $28E0 | VRAMWRITE
+    ;
+    .db :Tiles_Luigi_Emblem
+    .dw Tiles_Luigi_Emblem, $28E0 | VRAMWRITE
+    ;
+    .db :Tiles_BG_Overworld
+    .dw Tiles_BG_Overworld, VRAM_ADR_BG_LVL | VRAMWRITE
+    ;
+    .db :Tiles_BG_Snow
+    .dw Tiles_BG_Snow, $3680 | VRAMWRITE
+    ;
+    .db :Tiles_BG_Underground
+    .dw Tiles_BG_Underground, $3A80 | VRAMWRITE
+    ;
+    .db :Tiles_BG_Castle
+    .dw Tiles_BG_Castle, $2F20 | VRAMWRITE
+    ;
+    .db :Tiles_BG_Water
+    .dw Tiles_BG_Water, $3300 | VRAMWRITE
+    ;
+    .db :Tiles_BG_WaterCastle
+    .dw Tiles_BG_WaterCastle, $3680 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Enemies
+    .dw Tiles_SPR_Enemies, $0820 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Lakitu
+    .dw Tiles_SPR_Lakitu, $1260 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Podoboo
+    .dw Tiles_SPR_Podoboo, $0860 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Bowser
+    .dw Tiles_SPR_Bowser, $1260 | VRAMWRITE
+    ;
+    .db :Tiles_Cloud
+    .dw Tiles_Cloud, $0A40 | VRAMWRITE
+
+.ENDS
+
+.SECTION "Asset Table for NES GFX" BANK BANK_CODE SLOT 0 BITWINDOW 8
+
+AssetLoaderTableNES:
+    .db :Tiles_BG_Comm_NES
+    .dw Tiles_BG_Comm_NES, VRAM_ADR_BG_COMM | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Comm_NES
+    .dw Tiles_SPR_Comm_NES, VRAM_ADR_SPR_COMM | VRAMWRITE
+    ;
+    .db :Tiles_BG_Inter_NES
+    .dw Tiles_BG_Inter_NES, VRAM_ADR_BG_INTER | VRAMWRITE
+    ;
+    .db :Tiles_BG_TitleScreen_NES
+    .dw Tiles_BG_TitleScreen_NES, VRAM_ADR_BG_TITLE | VRAMWRITE
+    ;
+    .db :Tiles_Mario_Emblem_NES
+    .dw Tiles_Mario_Emblem_NES, $28E0 | VRAMWRITE
+    ;
+    .db :Tiles_Luigi_Emblem_NES
+    .dw Tiles_Luigi_Emblem_NES, $28E0 | VRAMWRITE
+    ;
+    .db :Tiles_BG_Overworld_NES
+    .dw Tiles_BG_Overworld_NES, VRAM_ADR_BG_LVL | VRAMWRITE
+    ;
+    .db BANK_SLOT2
+    .dw $0000, $0000
+    ;
+    .db BANK_SLOT2
+    .dw $0000, $0000
+    ;
+    .db :Tiles_BG_Castle_NES
+    .dw Tiles_BG_Castle_NES, $2F20 | VRAMWRITE
+    ;
+    .db :Tiles_BG_Water_NES
+    .dw Tiles_BG_Water_NES, $3480 | VRAMWRITE
+    ;
+    .db :Tiles_BG_WaterCastle_NES
+    .dw Tiles_BG_WaterCastle_NES, $3680 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Enemies_NES
+    .dw Tiles_SPR_Enemies_NES, $0820 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Lakitu_NES
+    .dw Tiles_SPR_Lakitu_NES, $1260 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Podoboo_NES
+    .dw Tiles_SPR_Podoboo_NES, $0860 | VRAMWRITE
+    ;
+    .db :Tiles_SPR_Bowser_NES
+    .dw Tiles_SPR_Bowser_NES, $1260 | VRAMWRITE
+    ;
+    .db :Tiles_Cloud_NES
+    .dw Tiles_Cloud_NES, $0A40 | VRAMWRITE
+.ENDS
+
+
+;   INPUT: A - ASSET ID
+;   OUTPUT: HL - SRC ADDRESS, DE - DEST ADDRESS, A - BANK
+AssetLoader:
+    LD HL, OptionBitflags
+    BIT 0, (HL)
+    LD HL, AssetLoaderTable
+    JP Z, +
+    LD HL, AssetLoaderTableNES
++:
+    LD B, A
+    ADD A, A
+    ADD A, A
+    ADD A, B
+    addAToHL8_M
+    LD B, (HL)
+    INC L
+    LD E, (HL)
+    INC L
+    LD D, (HL)
+    INC L
+    LD A, (HL)
+    INC L
+    LD H, (HL)
+    LD L, A
+    EX DE, HL
+    LD A, B
+    RET
 
 ;-------------------------------------------------------------------------------------
 .SECTION "SDSC Tags" FREE
@@ -1448,8 +1629,6 @@ NightSnowPaletteData:
 MushroomPaletteData:
     .dw swapBytes($C005)
     .db StripeCount($06)
-    ;.db $00, $00, $01, $06, $0B, $04, $08, $0C, $05, $0A, $2E, $0F, $2A, $3F, $3A, $3E
-    ;.db $00, $00, $01, $06, $0B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $01, $02, $03, $05, $0A, $2B
     .db $00
 .ENDS
@@ -1479,6 +1658,80 @@ PrincessPaletteData:
     .db $00
 .ENDS
 
+;-------------------------------------------------------------------------------------
+
+.SECTION "Water AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+WaterPaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($20)
+    .db $00, $13, $30, $27, $2E, $08, $00, $3F, $30, $00, $0B, $30, $00, $00, $00, $00
+    .db $00, $03, $0B, $06, $2A, $3F, $0B, $03, $3F, $0B, $00, $3F, $2A, $03, $0B, $06
+    .db $00
+.ENDS
+
+.SECTION "Ground AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+GroundPaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($20)
+    .db $00, $0E, $08, $00, $2B, $06, $00, $3F, $38, $00, $0B, $06, $00, $00, $00, $00
+    .db $00, $03, $0B, $06, $08, $3F, $0B, $03, $3F, $0B, $00, $2B, $06, $03, $0B, $06
+    .db $00
+.ENDS
+
+.SECTION "Underground AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+UndergroundPaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($20)
+    .db $00, $0E, $08, $04, $3D, $28, $00, $3F, $38, $28, $0B, $06, $28, $00, $00, $00
+    .db $00, $03, $0B, $06, $28, $2B, $06, $03, $3F, $0B, $14, $3D, $28, $03, $0B, $06
+    .db $00
+.ENDS
+
+.SECTION "Castle AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+CastlePaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($20)
+    .db $00, $3F, $2A, $15, $3F, $2A, $15, $3F, $03, $15, $0B, $06, $15, $00, $00, $00
+    .db $00, $03, $0B, $06, $28, $2B, $06, $03, $3F, $0B, $15, $3F, $2A, $03, $0B, $06
+    .db $00
+.ENDS
+
+.SECTION "Day Snow AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+DaySnowPaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($04)
+    .db $39, $3F, $15, $2A
+    .dw swapBytes($C010)
+    .db StripeCount($01)
+    .db $39
+    .db $00
+.ENDS
+
+.SECTION "Night Snow AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+NightSnowPaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($04)
+    .db $00, $3F, $15, $2A
+    .db $00
+.ENDS
+
+.SECTION "Mushroom AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+MushroomPaletteData_NES:
+    .dw swapBytes($C000)
+    .db StripeCount($04)
+    .db $39, $0B, $03, $00
+    .db $00
+.ENDS
+
+; .SECTION "Bowser Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+; BowserPaletteData_NES:
+    ; .dw swapBytes($C014)
+    ; .db StripeCount($03)
+    ; .db $08, $3F, $0B
+    ; .db $00
+; .ENDS
+
+;-------------------------------------------------------------------------------------
 .SECTION "'Thank You Mario' MSG Data" BANK BANK_SLOT2 SLOT 2 FREE
 MarioThanksMessage:
 ;"THANK YOU MARIO!"
@@ -1667,11 +1920,6 @@ TitleScreenData:
     .db StripeCount($1A)
     .dw BG_MACRO($0102), BLANKTILE, $08F7, $08F8, $08F9, $08FA, $08F4, $08FB, BLANKTILE, $08FC, $08F9, $08FD, $08F4
     .ENDIF
-
-;   "V0.12"
-    .dw swapBytes(xyToNameTbl_M(22, 13))
-    .db StripeCount($0A)
-    .dw $08B7, BG_MACRO($0100), $08B8, BG_MACRO($0101), BG_MACRO($0102)
 ;   "TOP-      0"
     .dw swapBytes(xyToNameTbl_M(12, 20))
     .db StripeCount($08)
@@ -1683,6 +1931,90 @@ TitleScreenData:
     .dw swapBytes($C013)
     .db StripeCount($01)
     .db $07
+
+
+;   "V0.12"
+    .dw swapBytes(xyToNameTbl_M(22, 13))
+    .db StripeCount($0A)
+    .dw $08B7, BG_MACRO($0100), $08B8, BG_MACRO($0101), BG_MACRO($0102)
+;   TERMINATOR
+    .db $00
+.ENDS
+
+.SECTION "Title Screen TileMap Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+TitleScreenData_NES:
+;   ROW 0
+    .dw swapBytes(xyToNameTbl_M(5, 1))
+    .db StripeCount($2C)
+    .dw $00B9, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BA, $00BB
+;   ROW 1
+    .dw swapBytes(xyToNameTbl_M(5, 2))
+    .db StripeCount($2C)
+    .dw $00BC, $00BD, $02BD, $00BE, $00BE, $00BF, $02BD, $00BD, $00C0, $00BF, $02BD, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C2
+;   ROW 2
+    .dw swapBytes(xyToNameTbl_M(5, 3))
+    .db StripeCount($2C)
+    .dw $00BC, $00C3, $00C4, $00C5, $00C5, $00C5, $00C6, $00C5, $00C7, $00C5, $00C8, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C2
+;   ROW 3
+    .dw swapBytes(xyToNameTbl_M(5, 4))
+    .db StripeCount($2C)
+    .dw $00BC, $00C9, $00CA, $00C9, $00C6, $00C5, $00CB, $00C9, $00C0, $00C5, $00CC, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C2
+;   ROW 4
+    .dw swapBytes(xyToNameTbl_M(5, 5))
+    .db StripeCount($2C)
+    .dw $00BC, $00CD, $00CE, $00CD, $00CE, $00CF, $00C1, $00CD, $00D0, $00CF, $00CF, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C1, $00C2
+;   ROW 5
+    .dw swapBytes(xyToNameTbl_M(5, 6))
+    .db StripeCount($2C)
+    .dw $00BC, $00BD, $00D1, $02BD, $00BD, $02BD, $00BF, $02BD, $00BE, $00BD, $02BD, $00C1, $00BF, $02BD, $00BF, $02BD, $00BD, $02BD, $00BD, $02BD, $00C1, $00C2
+;   ROW 6
+    .dw swapBytes(xyToNameTbl_M(5, 7))
+    .db StripeCount($2C)
+    .dw $00BC, $00C5, $00D2, $00D2, $00C5, $00D2, $00C5, $00D2, $00C5, $00C5, $00D2, $00C1, $00C5, $00D2, $00C5, $00D2, $00C5, $00D2, $00C5, $00D2, $00C1, $00C2
+;   ROW 7
+    .dw swapBytes(xyToNameTbl_M(5, 8))
+    .db StripeCount($2C)
+    .dw $00BC, $00C5, $00C5, $00C5, $00C5, $00C5, $00C5, $00C8, $00C5, $00C5, $00C5, $00C1, $00C5, $00C8, $00C5, $00C8, $00C5, $00C5, $00C3, $00D3, $00C1, $00C2
+;   ROW 8
+    .dw swapBytes(xyToNameTbl_M(5, 9))
+    .db StripeCount($2C)
+    .dw $00BC, $00C5, $00C5, $00C5, $00BF, $00D4, $00C5, $00CC, $00C5, $00C5, $00C5, $00C1, $00C5, $00D5, $00C5, $00CC, $00C5, $00C5, $00D6, $00D5, $00C1, $00C2
+;   ROW 9
+    .dw swapBytes(xyToNameTbl_M(5, 10))
+    .db StripeCount($2C)
+    .dw $00BC, $00C5, $00C5, $00C5, $00C5, $00D2, $00C5, $00C5, $00C5, $00C9, $00C6, $00C1, $00C5, $00C6, $00C5, $00C5, $00C9, $00C6, $00C9, $00C6, $00BE, $00C2
+;   ROW A
+    .dw swapBytes(xyToNameTbl_M(5, 11))
+    .db StripeCount($2C)
+    .dw $00D7, $00D8, $00D8, $00D8, $00D8, $00D8, $00D8, $00D8, $00D8, $00D9, $00DA, $00DB, $00D8, $00DC, $00D8, $00D8, $00D9, $00DA, $00D9, $00DA, $00D8, $00DD
+;   "C1985 NINTENDO"
+    .dw swapBytes(xyToNameTbl_M(13, 12))
+    .db StripeCount($1C)
+    .dw $00DE, $00ED, $00EE, $00EF, $00F0, BLANKTILE, $00DF, $00E0, $00DF, $00E1, $00E2, $00DF, $00E3, $00E4 
+;   "1 PLAYER GAME"
+    .dw swapBytes(xyToNameTbl_M(11, 15))
+    .db StripeCount($1A)
+    .dw BG_MACRO($0101), BLANKTILE, $00E5, $00E6, $00E7, $00E8, $00EC, $00E9, BLANKTILE, $00EA, $00E7, $00EB, $00EC
+    
+    .IF SMSPOWERCOMP == $00
+;   "2 PLAYER GAME"
+    .dw swapBytes(xyToNameTbl_M(11, 17))
+    .db StripeCount($1A)
+    .dw BG_MACRO($0102), BLANKTILE, $00E5, $00E6, $00E7, $00E8, $00EC, $00E9, BLANKTILE, $00EA, $00E7, $00EB, $00EC
+    .ENDIF
+;   "TOP-      0"
+    .dw swapBytes(xyToNameTbl_M(12, 20))
+    .db StripeCount($08)
+    .dw $00F1, $00F2, $00E5, BG_MACRO($010B)
+    .dw swapBytes(xyToNameTbl_M(22, 20))
+    .db StripeCount($02)
+    .dw BG_MACRO($0100)
+
+
+;   "V0.12"
+    .dw swapBytes(xyToNameTbl_M(22, 13))
+    .db StripeCount($0A)
+    .dw $00B7, BG_MACRO($0100), $00B8, BG_MACRO($0101), BG_MACRO($0102)
 ;   TERMINATOR
     .db $00
 .ENDS
@@ -2083,6 +2415,21 @@ Tiles_Mario_Emblem:
     .db $38 $38 $00 $38 $10 $10 $6C $7C $82 $82 $7C $FE $AA $AA $54 $FE $BA $BA $44 $FE $38 $38 $44 $7C $38 $38 $00 $38 $00 $00 $00 $00
 Tiles_Luigi_Emblem:
     .db $38 $38 $00 $38 $5C $7C $20 $5C $DE $FE $20 $DE $DE $FE $20 $DE $DE $FE $20 $DE $44 $7C $38 $44 $38 $38 $00 $38 $00 $00 $00 $00
+
+Tiles_Mario_Emblem_NES:
+    .db $00 $00 $00 $38 $6C $6C $6C $10 $7C $7C $7C $82 $54 $54 $54 $AA $44 $44 $44 $BA $44 $44 $44 $38 $00 $00 $00 $38 $00 $00 $00 $00
+Tiles_Luigi_Emblem_NES:
+    .db $38 $00 $38 $00 $5C $00 $7C $00 $DE $00 $FE $00 $DE $00 $FE $00 $DE $00 $FE $00 $44 $00 $7C $00 $38 $00 $38 $00 $00 $00 $00 $00
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.SECTION "Cloud Platform Tiles" BANK BANK_SLOT2 SLOT 2 FREE
+
+Tiles_Cloud:
+    .db $3C $3C $00 $3C $7C $7E $00 $7E $BE $FF $00 $FF $BE $FF $00 $FF $9E $FF $00 $FF $CC $FF $00 $FF $78 $7E $00 $7E $00 $3C $00 $3C
+
+Tiles_Cloud_NES:
+    .db $00 $00 $00 $3C $02 $00 $00 $7E $41 $00 $00 $FF $41 $00 $00 $FF $61 $00 $00 $FF $33 $00 $00 $FF $06 $00 $00 $7E $3C $00 $00 $3C
 .ENDS
 
 ;   COMPRESSED TILE DATA
@@ -2171,7 +2518,82 @@ Tiles_SPR_Bowser:
     .INCBIN "SPR_Bowser.zx7"
 .ENDS
 
+.INCDIR "ASSETS/NES"
+;   COMPRESSED TILE DATA (NES)
+;-------------------------------------------------------------------------------------
+.SECTION "BG Common Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
 
+Tiles_BG_Comm_NES:
+    .INCBIN "BG_Comm.zx7"
+.ENDS
+
+.SECTION "BG Titlescreen Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_BG_TitleScreen_NES:
+    .INCBIN "BG_TitleScreen.zx7"
+.ENDS
+
+.SECTION "BG Intermediate Screen Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_BG_Inter_NES:
+    .INCBIN "BG_Inter.zx7"
+.ENDS
+
+.SECTION "BG Overworld Tiles (NES)" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_Overworld_NES:
+    .INCBIN "BG_Overworld.zx7"
+.ENDS
+
+.SECTION "BG Water Tiles (NES)" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_Water_NES:
+    .INCBIN "BG_Water.zx7"
+.ENDS
+
+.SECTION "BG Castle Tiles (NES)" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_Castle_NES:
+    .INCBIN "BG_Castle.zx7"
+.ENDS
+
+.SECTION "BG Water Castle Tiles (NES)" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_BG_WaterCastle_NES:
+    .INCBIN "BG_WaterCastle.zx7"
+.ENDS
+
+.SECTION "SPR Common Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_SPR_Comm_NES:
+    .INCBIN "SPR_Comm.zx7"
+.ENDS
+
+.SECTION "Base Enemy Sprite Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_SPR_Enemies_NES:
+    .INCBIN "SPR_Enemies.zx7"
+.ENDS
+
+.SECTION "Lakitu Enemy Sprite Tiles (NES)" BANK BANK_PLAYERGFX05 SLOT 2 FREE
+
+Tiles_SPR_Lakitu_NES:
+    .INCBIN "SPR_Lakitu.zx7"
+.ENDS
+
+.SECTION "Podoboo Enemy Sprite Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_SPR_Podoboo_NES:
+    .INCBIN "SPR_Podoboo.zx7"
+.ENDS
+
+.SECTION "Bowser Enemy Sprite Tiles (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_SPR_Bowser_NES:
+    .INCBIN "SPR_Bowser.zx7"
+.ENDS
+
+.INCDIR "ASSETS"
 ;-------------------------------------------------------------------------------------
 .SECTION "Uncompressed Player Tiles - Mario [Right, Palette 0]" BANK BANK_PLAYERGFX00 SLOT 2 FORCE ORG $0000
 .INCLUDE "SPR_Mario00.inc"
@@ -2214,6 +2636,18 @@ Tiles_SPR_Bowser:
 .SECTION "Uncompressed Player Tiles - Luigi [Right]" BANK BANK_PLAYERGFX03 SLOT 2 FREE
 .ENDS
 
+.INCDIR "ASSETS/NES"
+;-------------------------------------------------------------------------------------
+.SECTION "Uncompressed Player Tiles (NES) - Mario/Luigi [Left]" BANK BANK_PLAYERGFX04 SLOT 2 FORCE ORG $0000
+    .INCLUDE "SPR_Mario00.inc"
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.SECTION "Uncompressed Player Tiles (NES) - Mario/Luigi [Right]" BANK BANK_PLAYERGFX05 SLOT 2 FORCE ORG $0000
+    .INCLUDE "SPR_Mario10.inc"
+.ENDS
+
+.INCDIR "ASSETS"
 ;-------------------------------------------------------------------------------------
 .SECTION "Animated Background Tiles" BANK BANK_SLOT2 SLOT 2 FREE
 

@@ -884,7 +884,8 @@ CastleStairsY07:
 CastleStairsMain:
     CALL ChkLrgObjFixedLength
     EX DE, HL
-    JP NZ, +
+    JP NZ, NotLastStair
+;
     LD (HL), MT_CASTLESTAIRS_END
     INC L
     LD A, (HL)
@@ -893,19 +894,32 @@ CastleStairsMain:
     LD (HL), MT_CASTLESTAIRS_ENDL
     INC L
     JP RenderUnderStairs
-+:
+;
+NotLastStair:
     LD A, (HL)
     OR A
     JP NZ, RenderUnderStairs
+    LD A, (OptionBitflags)
+    AND A, $01
     LD (HL), MT_CASTLESTAIRS_TOP
+    JP Z, RenderUnderStairs
+    LD (HL), MT_SOLIDBLK_WHITE
+    ; FALL THROUGH
 
 RenderUnderStairs:
+    LD A, (OptionBitflags)
+    AND A, $01
+    LD C, MT_CASTLESTAIRS_BOT
+    JP Z, +
+    LD C, MT_SOLIDBLK_WHITE
+;
++:
     LD B, $03
 -:
     LD A, (HL)
     OR A
     JP NZ, +
-    LD (HL), MT_CASTLESTAIRS_BOT
+    LD (HL), C
 +:
     INC L
     DJNZ -
@@ -934,6 +948,10 @@ CastleFloorLeftWallY0A:
     ; FALL THROUGH
 
 CastleFloorLeftWallMain:
+    LD A, (OptionBitflags)
+    AND A, $01
+    RET NZ
+;
     LD (HL), MT_CASTLEFLOOR_LTOP
     INC L
 -:
@@ -964,6 +982,10 @@ CastleFloorLeftY0A:
     ; FALL THROUGH
 
 CastleFloorLeftMain:
+    LD A, (OptionBitflags)
+    AND A, $01
+    RET NZ
+;
     LD A, (HL)
     CP A, MT_CASTLEFLOOR_TOP
     LD A, MT_CASTLEFLOOR_LTOP
@@ -999,6 +1021,10 @@ CastleFloorRightWallY0A:
     ; FALL THROUGH
 
 CastleFloorRightWallMain:
+    LD A, (OptionBitflags)
+    AND A, $01
+    RET NZ
+;
     LD (HL), MT_CASTLEFLOOR_RTOP
     INC L
 -:
@@ -1029,6 +1055,10 @@ CastleFloorRightY0A:
     ; FALL THROUGH
 
 CastleFloorRightMain:
+    LD A, (OptionBitflags)
+    AND A, $01
+    RET NZ
+;
     LD A, (HL)
     CP A, MT_CASTLEFLOOR_TOP
     LD A, MT_CASTLEFLOOR_RTOP
@@ -1738,6 +1768,11 @@ CoinMetatileData:
 .ENDS
 
 RowOfCoins:
+    LD A, (OptionBitflags)              ;always load watercoin if doing NES GFX
+    AND A, $01
+    LD A, MT_WATERCOIN
+    JP NZ, GetRow
+;
     LD A, (AreaType)                    ;get area type
     LD DE, CoinMetatileData
     addAToDE8_M
@@ -2385,7 +2420,10 @@ GetAreaDataAddrs:
     XOR A
 @StoreStyle:
     LD (AreaStyle), A
-    ; Correct palette on w6-3
+    ; Correct palette on w6-3 (only for default gfx)
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP NZ, +
     LD A, (BackgroundColorCtrl)
     CP A, $07
     JP NZ, +

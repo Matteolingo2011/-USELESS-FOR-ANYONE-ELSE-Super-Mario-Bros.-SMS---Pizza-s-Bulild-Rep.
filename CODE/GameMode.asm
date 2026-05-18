@@ -213,15 +213,21 @@ ProcELoop:
     CALL BlockObjectsCore
 ;
     CALL MiscObjectsCore
+;
     LD A, (AreaType)
     OR A
     CALL NZ, ProcessCannons
+;
     LD A, (AreaType)
     OR A
     CALL Z, ProcessWhirlpools
+;
     CALL FlagpoleRoutine
+;
     CALL RunGameTimer
-    CALL ColorRotation
+;
+    LD HL, (AnimateRoutine)
+    CALL IndirectCallHL
 ;
     LD A, (Player_Y_HighPos)
     CP A, $02
@@ -246,7 +252,9 @@ CycleTwo:
     CALL CyclePlayerPalette
     JP SaveAB
 ClrPlrPal:
-    CALL GetPlayerColors ;CALL ResetPalStar
+    LD A, (GameEngineSubroutine)
+    CP A, $0C
+    CALL NZ, GetPlayerColors ;CALL ResetPalStar
 ;
 SaveAB:
     LD A, (A_B_Buttons)
@@ -347,7 +355,7 @@ AnimiatedBGTiles:
 ;   $06:        total frame count
 ;   $07:        frame timer
 ;   $08:        frame timer reset value
-ColorRotation:
+AnimateBGTiles:
 ;   SLOT 0
     ; DECREMENT TIMER AND BRANCH IF IT HASN'T EXPIRED
     LD HL, BGTileQueue0.Timer
@@ -438,6 +446,81 @@ ColorRotation:
     DEC L
     LD (BGTileQueue2.TileAdr), HL
     RET
+
+ColorRotation:
+;   SPR PALETTE ROTATION
+    LD HL, (VRAM_Buffer1_Ptr)
+    LD (HL), $C0
+    INC L
+    LD (HL), $1D
+    INC L
+    LD (HL), StripeCount($03)
+    INC L
+    ;
+    LD DE, SPRColorRotatePalettes
+    LD A, (AreaType)
+    ADD A, A
+    ADD A, A
+    ADD A, A
+    ADD A, A
+    addAToDE8_M
+    LD A, (FrameCounter)
+    ;RRCA
+    ;AND A, $03
+    ;ADD A, A
+    ;ADD A, A
+    AND A, $06
+    ADD A, A
+    addAToDE8_M
+    EX DE, HL
+    LDI
+    LDI
+    LDI
+    XOR A
+    LD (DE), A
+    LD (VRAM_Buffer1_Ptr), DE
+;   BG PALETTE ROTATION
+    LD A, (FrameCounter)
+    AND A, $07
+    RET NZ
+    ;
+    LD HL, (VRAM_Buffer1_Ptr)
+    LD (HL), $C0
+    INC L
+    LD (HL), $0A
+    INC L
+    LD (HL), StripeCount($01)
+    INC L
+    ;
+    LD DE, BGColorRotatePalette
+    LD A, (ColorRotateOffset)
+    addAToDE8_M
+    LD A, (DE)
+    LD (HL), A
+    INC L
+    LD (HL), $00
+    LD (VRAM_Buffer1_Ptr), HL
+    ;
+    LD HL, ColorRotateOffset
+    INC (HL)
+    LD A, (HL)
+    CP A, $06
+    RET C
+    LD (HL), $00
+    RET
+
+.SECTION "BG Color Rotation Palette" BANK BANK_SLOT2 SLOT 2 BITWINDOW 8
+BGColorRotatePalette:
+    .db $0B, $0B, $0B, $06, $01, $06
+.ENDS
+
+.SECTION "SPR Color Rotation Palettes" BANK BANK_SLOT2 SLOT 2 BITWINDOW 8
+SPRColorRotatePalettes:
+    .db $03, $0B, $06, $00, $2A, $3F, $0B, $00, $03, $3F, $0B, $00, $00, $3F, $2A, $00
+    .db $03, $0B, $06, $00, $08, $3F, $0B, $00, $03, $3F, $0B, $00, $00, $2B, $06, $00
+    .db $03, $0B, $06, $00, $28, $2B, $06, $00, $03, $3F, $0B, $00, $14, $3D, $28, $00
+    .db $03, $0B, $06, $00, $28, $2B, $06, $00, $03, $3F, $0B, $00, $15, $3F, $2A, $00
+.ENDS
 
 ;-------------------------------------------------------------------------------------
 ;   $00 (IXL)
@@ -3495,7 +3578,8 @@ ProcessBowserHalf:
 ;
     CALL GetEnemyOffscreenBits                  ;to get offscreen bits, relative position and draw bowser
     CALL RelativeEnemyPosition
-    CALL BowserGfxDraw
+    LD IY, (BowserDrawRoutine)
+    CALL IndirectCallIY
 ;
     LD L, <Enemy_State
     LD A, (HL)
@@ -3664,7 +3748,7 @@ BowserGfxRet:
     LD HL, (ObjectOffset)
     RET
 
-.SECTION "Bowser Sprite Data" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
+.SECTION "Bowser Sprite Map Data" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 BowserSpriteFrames:
     .db $96, $97, $9A, $9B, $9E, $9F ; FRONT FOOT, MOUTH OPEN
     .db $98, $99, $9C, $9D, $A0, $A1
@@ -3696,6 +3780,81 @@ BowserSpriteFramesHFlip:
 
     .db $BD, $BE, $C7, $C8, $C5, $C6
     .db $B1, $B2, $B5, $B6, $C3, $C4
+.ENDS
+
+BowserGfxDraw_NES:
+    LD L, <Enemy_Y_Position                 ;get enemy object vertical position
+    LD A, (HL)
+    SUB A, SMS_PIXELYOFFSET
+    LD B, A
+    LD A, (Enemy_Rel_XPos)                  ;get enemy object horizontal position
+    LD C, A                                 ;relative to screen
+;
+    LD L, <Enemy_SprDataOffset              ;get sprite data offset
+    LD E, (HL)
+    LD D, >Sprite_Y_Position
+;
+    LD L, <Enemy_MovingDir                  ;get enemy object moving direction
+    LD A, (HL)
+    DEC A
+    LD HL, BowserSpriteFramesHFlip_NES
+    JP Z, +
+    LD L, <BowserSpriteFrames_NES
+;
++:
+    LD A, (BowserGfxFlag)
+    DEC A
+    JP Z, +
+    LD A, B
+    ADD A, $08
+    LD B, A
+    LD A, $06
+    addAToHL8_M
+;
++:
+    LD A, (BowserBodyControls)
+    RRCA
+    RRCA
+    RRCA
+    addAToHL8_M
+    CALL DrawSpriteObject
+    CALL DrawSpriteObject
+    CALL DrawSpriteObject
+    JP SprObjectOffscrChk
+
+
+.SECTION "Bowser Sprite Map Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
+BowserSpriteFrames_NES:
+    .db $93, $94, $95, $96, $00, $99
+    .db $97, $98, $9A, $9B, $9C, $9D
+    .db $00, $00, $00, $00
+
+    .db $93, $94, $9E, $9F, $00, $99
+    .db $97, $98, $9A, $9B, $9C, $9D
+    .db $00, $00, $00, $00
+
+    .db $93, $94, $95, $96, $00, $99
+    .db $97, $98, $9A, $9B, $A0, $A1
+    .db $00, $00, $00, $00
+
+    .db $93, $94, $9E, $9F, $00, $99
+    .db $97, $98, $9A, $9B, $A0, $A1
+
+BowserSpriteFramesHFlip_NES:
+    .db $A2, $A3, $A6, $A7, $AA, $00
+    .db $A4, $A5, $A8, $A9, $AB, $AC
+    .db $00, $00, $00, $00
+
+    .db $A2, $A3, $AD, $AE, $AA, $00
+    .db $A4, $A5, $A8, $A9, $AB, $AC
+    .db $00, $00, $00, $00
+
+    .db $A2, $A3, $A6, $A7, $AA, $00
+    .db $A4, $A5, $A8, $A9, $AF, $B0
+    .db $00, $00, $00, $00
+
+    .db $A2, $A3, $AD, $AE, $AA, $00
+    .db $A4, $A5, $A8, $A9, $AF, $B0
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -4028,19 +4187,19 @@ DrawStarFlag:
     ADD A, $08
     LD (HL), A
     INC L
-    LD (HL), $4D
-    INC L
-    LD (HL), C
-    INC L
     LD (HL), $4C
     INC L
-    LD (HL), A
+    LD (HL), C
     INC L
     LD (HL), $4B
     INC L
-    LD (HL), C
+    LD (HL), A
     INC L
     LD (HL), $4A
+    INC L
+    LD (HL), C
+    INC L
+    LD (HL), $49
     EX DE, HL
     RET
 
@@ -5201,7 +5360,7 @@ BlockGfxData:
     ;.db $24, $24, $24, $24          ; TILES FOR BLANK METATILE  
     ;.db $26, $26, $26, $26          ; TILES FOR BLANK METATILE FOR WATER
 
-    .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; SHINY BRICK MT
+    .dw BG_MACRO($019B), BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($01A4)  ; SHINY BRICK MT
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; BRICK MT
     .dw BG_MACRO($11A5), BG_MACRO($11A7), BG_MACRO($11A6), BG_MACRO($11A8)  ; EMPTY BLOCK MT (PRIORITY)
     .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE                          ; BLANK MT
@@ -6176,6 +6335,7 @@ Shroom_Flower_PUp:
     LD (PlayerStatus), A
     CALL GetPlayerColors            ;run sub to change colors of player
 ;
+    LD HL, (ObjectOffset)
     LD A, $0C                       ;set value to be used by subroutine tree (fiery)
     JP UpToFiery                    ;jump to set values accordingly
 
@@ -6389,6 +6549,7 @@ ForceInjury:
     LD (SFXTrack0.SoundQueue), A
 ;
     CALL GetPlayerColors
+    LD HL, (ObjectOffset)
     LD A, $0A
 SetKRout:
     LD C, $01

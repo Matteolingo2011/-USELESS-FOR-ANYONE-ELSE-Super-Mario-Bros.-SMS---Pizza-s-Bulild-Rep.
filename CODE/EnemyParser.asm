@@ -1004,25 +1004,35 @@ InitBowser:
     SRL A
     LD (BowserMovementSpeed), A
 ;
-    LD DE, BowserPaletteData
-    LD HL, (VRAM_Buffer1_Ptr)
-    LD (HL), $C0
-    INC L
-    LD (HL), $10
-    INC L
-    LD (HL), StripeCount($10)
-    INC L
-    EX DE, HL
-    LD BC, $10
+    LD HL, BowserPaletteData
+    LD BC, _sizeof_BowserPaletteData
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP Z, +
+    LD HL, BowserPaletteData_NES
+    LD BC, _sizeof_BowserPaletteData_NES
++:
+    LD DE, (VRAM_Buffer1_Ptr)
     LDIR
-    XOR A
-    LD (DE), A
+    DEC E
+    LD (VRAM_Buffer1_Ptr), DE
     LD HL, (ObjectOffset)
     RET
 
-.SECTION "Bowser Palette Data (All-Stars)" BANK BANK_SLOT2 SLOT 2 FREE
+.SECTION "Bowser Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
 BowserPaletteData:
+    .dw swapBytes($C010)
+    .db StripeCount($10)
     .db $00, $00, $04, $15, $2A, $24, $0E, $06, $1B, $0F, $07, $3F, $03, $02, $10, $09
+    .db $00
+.ENDS
+
+.SECTION "Bowser Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+BowserPaletteData_NES:
+    .dw swapBytes($C014)
+    .db StripeCount($03)
+    .db $08, $3F, $0B
+    .db $00
 .ENDS
 
 ;--------------------------------

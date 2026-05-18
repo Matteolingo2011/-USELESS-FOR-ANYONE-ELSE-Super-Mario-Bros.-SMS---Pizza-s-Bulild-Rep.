@@ -28,7 +28,13 @@ InitScreen:
     LD A, (OperMode)
     OR A
     JP Z, IncSubtask                ;if mode still 0, do not load
+;
     LD A, VRAMTBL_UNDERPAL          ;into buffer pointer
+    LD HL, OptionBitflags
+    BIT 0, (HL)
+    JP Z, +
+    ADD A, $15
++:
     LD (VRAM_Buffer_AddrCtrl), A    ;store offset into buffer control
     JP IncSubtask                   ;move onto next task
 
@@ -55,6 +61,12 @@ SetupIntermediate:
 WriteTopStatusLine:
     XOR A                           ;select main status bar
     CALL WriteGameText              ;output it
+;
+    LD A, (OptionBitflags)          ;skip if on default gfx
+    AND A, $01
+    JP Z, IncSubtask
+    LD A, $01                       ;make coin tile use bg palette
+    LD (VRAM_Buffer1 + $19), A
     JP IncSubtask                   ;onto the next task
 
 ;-------------------------------------------------------------------------------------
@@ -147,22 +159,22 @@ OutputInter:
     ;
     DI
     ; upload intermediate graphics
-    LD A, :Tiles_BG_Inter
+    LD A, ASSET_INTERMEDIATE
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Inter
-    LD DE, VRAM_ADR_BG_INTER | VRAMWRITE
     CALL zx7_decompressVRAM
     ; UPLOAD PLAYER EMBLEM
-    LD A, :Tiles_Mario_Emblem
-    LD (MAPPER_SLOT2), A
-    LD HL, $28E0 | VRAMWRITE
-    RST setVDPAddress
-    LD HL, Tiles_Mario_Emblem
     LD A, (CurrentPlayer)
     OR A
+    LD A, ASSET_EMBLEM_M
     JP Z, +
-    LD HL, Tiles_Luigi_Emblem
+    INC A
 +:
+    CALL AssetLoader
+    LD (MAPPER_SLOT2), A
+    EX DE, HL
+    RST setVDPAddress
+    EX DE, HL
     LD BC, $20 * $100 + VDPDATA_PORT
     OTIR
     ; RESET BANK, ENABLE INTS
@@ -178,11 +190,11 @@ GameOverInter:
     CALL WriteGameText
     ;upload intermediate graphics
     DI
-    LD A, :Tiles_BG_Inter
+    LD A, ASSET_INTERMEDIATE
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Inter
-    LD DE, VRAM_ADR_BG_INTER | VRAMWRITE
     CALL zx7_decompressVRAM
+    ;
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     EI
@@ -221,6 +233,11 @@ GetAreaPalette:
     LD HL, AreaPalette              ;based on area type
     addAToHL8_M
     LD A, (HL)
+    LD HL, OptionBitflags
+    BIT 0, (HL)
+    JP Z, +
+    ADD A, $15
++:
     LD (VRAM_Buffer_AddrCtrl), A    ;store offset into buffer control
     JP IncSubtask                   ;move onto next task
 
@@ -240,19 +257,31 @@ BackgroundColors:
     ;.db $0f, $22, $0f, $0f ;used by background color control if set
 .ENDS
 
-;PlayerColors:
+.SECTION "PlayerColors (NES)" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
+PlayerColors:
+    .db $03, $0B, $06, $00       ;mario's colors
+    .db $3F, $0B, $08, $00       ;luigi's colors
+    .db $1F, $0B, $03, $00       ;fiery (used by both)
     ;.db $22, $16, $27, $18 ;mario's colors
     ;.db $22, $30, $27, $19 ;luigi's colors
     ;.db $22, $37, $27, $16 ;fiery (used by both)
+.ENDS
 
 GetBackgroundColor:
     LD A, (BackgroundColorCtrl)     ;check background color control
     OR A
     JP Z, NoBGColor                 ;if not set, increment task and fetch palette
+;
     LD HL, BGColorCtrl_Addr         ;put appropriate palette into vram
     addAToHL8_M
     LD A, (HL)
+    LD HL, OptionBitflags
+    BIT 0, (HL)
+    JP Z, +
+    ADD A, $15
++:
     LD (VRAM_Buffer_AddrCtrl), A    ;note that if set to 5-7, $0301 will not be read
+;
 NoBGColor:
     LD HL, ScreenRoutineTask        ;increment to next subtask and plod on through
     INC (HL)
@@ -311,41 +340,46 @@ ChkFiery:
     INC B                           ;if fiery, load alternate offset for fiery player
     INC B
 StartClrGet:
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP NZ, GetPlayerColors_NES
     LD A, (PlayerGfxBank)
     AND A, %11111101                ;remove old player bit
     OR A, C                         ;OR with new player bit
     LD (PlayerGfxBank), A
 ;
-    LD A, B
-    ;JP CyclePlayerPalette
-    AND A, $03                      ;mask out all but d1-d0 (previously d3-d2)
-    LD B, A                         ;store result here to use as palette bits
     LD A, (Player_SprAttrib)        ;get player attributes
     AND A, %11111100                ;save any other bits but palette bits
     OR A, B                         ;add palette bits
     LD (Player_SprAttrib), A        ;store as new player attributes
     RET
 ;
-;     LD HL, (VRAM_Buffer1_Ptr)       ;get current buffer offset
-;     LD A, (BackgroundColorCtrl)     ;if this value is four or greater, it will be set
-;     OR A
-;     JP NZ, SetBGColor               ;therefore use it as offset to background color
-;     LD A, (AreaType)                ;otherwise use area type bits from area offset as offset
-; SetBGColor:
-;     LD (HL), $C0
-;     INC L
-;     LD (HL), $10
-;     INC L
-;     LD (HL), $01
-;     INC L
-;     LD DE, BackgroundColors
-;     addAToDE8_M
-;     LD A, (DE)
-;     LD (HL), A
-;     INC L
-;     LD (HL), $00
-;     LD (VRAM_Buffer1_Ptr), HL
-;     RET
+GetPlayerColors_NES:
+    LD DE, PlayerColors + $08
+    BIT 1, B
+    JP NZ, WritePlayerClrStripeCmd
+    LD E, <PlayerColors
+    LD A, C
+    SUB A, BANK_PLAYERGFX00
+    ADD A, A
+    addAToDE8_M
+    ;
+WritePlayerClrStripeCmd:
+    LD HL, (VRAM_Buffer1_Ptr)
+    LD (HL), $C0
+    INC L
+    LD (HL), $11
+    INC L
+    LD (HL), StripeCount($03)
+    INC L
+    EX DE, HL
+    LDI
+    LDI
+    LDI
+    XOR A
+    LD (DE), A
+    LD (VRAM_Buffer1_Ptr), DE
+    RET
 
 ;-------------------------------------------------------------------------------------
 
@@ -353,7 +387,13 @@ GetAlternatePalette1:
     LD A, (AreaStyle)                   ;check for mushroom level style
     CP A, $01
     JP NZ, IncSubtask
+;
+    LD HL, (OptionBitflags)
+    AND A, $01
     LD A, VRAMTBL_MUSHROOMPAL           ;if found, load appropriate palette
+    JP Z, +
+    ADD A, $15  
++:
     LD (VRAM_Buffer_AddrCtrl), A
     JP IncSubtask                       ;now onto the next task
 
@@ -365,16 +405,20 @@ DrawTitleScreen:
     JP NZ, IncModeTask_B                ;if not, exit
 ;   Load graphics for TitleScreen
     DI
-    LD A, :Tiles_BG_TitleScreen
+    LD A, ASSET_TITLESCREEN
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_TitleScreen
-    LD DE, VRAM_ADR_BG_TITLE | VRAMWRITE
     CALL zx7_decompressVRAM
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     EI
 ;   Set Buffer control
+    LD A, (OptionBitflags)
+    AND A, $01
     LD A, VRAMTBL_TITLESCREEN           ;set buffer transfer control to $0300,
+    JP Z, +
+    ADD A, $15
++:
     LD (VRAM_Buffer_AddrCtrl), A
     JP IncSubtask                       ;increment task and exit
 
@@ -434,12 +478,24 @@ LoadLevelTileData:
     LD BC, $0008
     LDIR
     ; LOAD OVERWORLD GFX AS BASE
-    LD A, :Tiles_BG_Overworld
+    LD A, ASSET_BGOVERWORLD
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Overworld
-    LD DE, VRAM_ADR_BG_LVL | VRAMWRITE
     CALL zx7_decompressVRAM
+    ;
+    LD A, (CloudTypeOverride)
+    OR A
+    JP Z, +
+    LD A, ASSET_SPRCLOUD
+    CALL AssetLoader
+    LD (MAPPER_SLOT2), A
+    EX DE, HL
+    RST setVDPAddress
+    EX DE, HL
+    LD BC, $20 * $100 + VDPDATA_PORT
+    OTIR
     ; LOAD SPECIAL TILES DEPENDING ON AREATYPE
++:
     LD A, (AreaType)
     OR A
     JP Z, WaterAreaSetup
@@ -461,22 +517,19 @@ CastleSetup:
     LD HL, BGTileQueue2.UpdateFlag
     LD (HL), $00
     ; UNIQUE TILES FOR CASTLE AREA
-    LD A, :Tiles_BG_Castle
+    LD A, ASSET_BGCASTLE
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Castle
-    LD DE, $2F20 | VRAMWRITE
     CALL zx7_decompressVRAM
     ; PODOBOO & FLAME SPRITE
-    LD A, :Tiles_SPR_Podoboo
+    LD A, ASSET_SPRPODOBOO
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_SPR_Podoboo
-    LD DE, $0860 | VRAMWRITE
     CALL zx7_decompressVRAM
     ; BOWSER SPRITES
-    LD A, :Tiles_SPR_Bowser
+    LD A, ASSET_SPRBOWSER
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_SPR_Bowser
-    LD DE, $1260 | VRAMWRITE
     CALL zx7_decompressVRAM
     ; RETAINER/PRINCESS SPRITE
     JP TileLoadDone
@@ -501,10 +554,9 @@ WaterAreaSetup:
     LD HL, BGTileQueue2.UpdateFlag
     LD (HL), $00
     ; UNIQUE TILES FOR WATER AREA
-    LD A, :Tiles_BG_Water
+    LD A, ASSET_BGWATER
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Water
-    LD DE, $3300 | VRAMWRITE
     CALL zx7_decompressVRAM
     ; LOAD WATER CASTLE TILES IF ON W8-4
     LD A, (WorldNumber)
@@ -515,13 +567,15 @@ WaterAreaSetup:
     LD DE, $0703
     SBC HL, DE
     JP NZ, TileLoadDone
-    LD A, :Tiles_BG_WaterCastle
+    LD A, ASSET_BGWATERCASTLE
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_WaterCastle
-    LD DE, $3680 | VRAMWRITE
     CALL zx7_decompressVRAM
     JP TileLoadDone
 OverWorldSetup:
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP NZ, TileLoadDone
     LD A, (BackgroundColorCtrl)
     CP A, $05
     JP Z, SnowOverworldSetup
@@ -553,19 +607,20 @@ SnowOverworldSetup:
     LD (HL), $FF
     LD HL, BGTileQueue2.UpdateFlag
     LD (HL), $00
-    ; UPLOAD TILES FOR SNOW
-    LD A, :Tiles_BG_Snow
+    ; UPLOAD TILES FOR SNOW (ONLY FOR DEFAULT GFX)
+    LD A, ASSET_BGSNOW
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Snow
-    LD DE, $3680 | VRAMWRITE
     CALL zx7_decompressVRAM
     JP TileLoadDone
 UndergroundSetup:
-    ; UNIQUE TILES FOR UNDERGROUND AREA
-    LD A, :Tiles_BG_Underground
+    ; UNIQUE TILES FOR UNDERGROUND AREA (ONLY FOR DEFAULT GFX)
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP NZ, +
+    LD A, ASSET_BGUNDERGROUND
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_BG_Underground
-    LD DE, $3A80 | VRAMWRITE
     CALL zx7_decompressVRAM
     ; SLOT 1 'LATERN'
     LD A, :AnimatedBGTileInits
@@ -579,6 +634,16 @@ UndergroundSetup:
     LD (HL), $FF
     LD HL, BGTileQueue2.UpdateFlag
     LD (HL), $00
+    JP TileLoadDone
+    ; FOR NES GFX, CLEAR OUT LATERN GFX AREA
++:
+    LD HL, $3D80 | VRAMWRITE
+    RST setVDPAddress
+    LD B, $C0
+    XOR A
+-:
+    OUT (VDPDATA_PORT), A
+    DJNZ -
 TileLoadDone:
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
@@ -588,10 +653,9 @@ TileLoadDone:
 
 LoadEnemySprites:
 ;   LOAD BASE ENEMY SPRITE SHEET
-    LD A, :Tiles_SPR_Enemies
+    LD A, ASSET_SPRENEMY
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_SPR_Enemies
-    LD DE, VRAM_ADR_SPR_EMY | VRAMWRITE
     CALL zx7_decompressVRAM
 ;   LOAD LAKITU ON CERTAIN LEVELS (4-1,6-1,8-2)
     LD A, (WorldNumber)
@@ -613,9 +677,8 @@ LoadEnemySprites:
     SBC HL, DE
     RET NZ
 LoadLakitu:
-    LD A, :Tiles_SPR_Lakitu
+    LD A, ASSET_SPRLAKITU
+    CALL AssetLoader
     LD (MAPPER_SLOT2), A
-    LD HL, Tiles_SPR_Lakitu
-    LD DE, $1260 | VRAMWRITE
     JP zx7_decompressVRAM
     

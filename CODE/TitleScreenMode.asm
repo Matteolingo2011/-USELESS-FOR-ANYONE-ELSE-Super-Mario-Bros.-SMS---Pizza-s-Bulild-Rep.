@@ -178,12 +178,8 @@ GameMenuRoutine:
 .SECTION "Mushroom Icon Stripe Command for DrawMushroomIcon" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 MushroomIconData:
     .dw swapBytes(xyToNameTbl_M(9, 15))     ; ADDRESS
-    ;.db $03 | STRIPE_VWRITE_W               ; COUNT
-    ;.dw $08FE, BLANKTILE, BLANKTILE
-    ;.db $00                                 ; TERMINATOR
-
     .db StripeCount($02)
-    .dw $08FE                               ; $03-$04
+    .dw $08B6                               ; $03-$04
 
     .dw swapBytes(xyToNameTbl_M(9, 17))
     .db StripeCount($02)
@@ -198,6 +194,13 @@ DrawMushroomIcon:
     LD BC, _sizeof_MushroomIconData ;1-player game
     LDIR
 ;
+    LD A, (OptionBitflags)          ;make mushroom icon use bg palette if doing NES GFX
+    AND A, $01
+    JP Z, +
+    XOR A
+    LD (VRAM_Buffer1 + $04), A
+;
++:
     DEC E
     LD (VRAM_Buffer1_Ptr), DE       ;update buffer index
 ;
@@ -210,10 +213,16 @@ DrawMushroomIcon:
     INC L
     LD (HL), BLANKTILE
     LD L,  <VRAM_Buffer1 + $08
-    ;LD L, <VRAM_Buffer1+7
-    LD (HL), $FE                    ;then load shroom icon tile in 2-player position
+    LD (HL), $B6                    ;then load shroom icon tile in 2-player position
     INC L
-    LD (HL), $08
+
+    LD A, (OptionBitflags)          ;use spr palette for default, bg palette for NES
+    OR A
+    LD A, $08
+    JP Z, +
+    XOR A
++:
+    LD (HL), A
     RET
 
 ;-------------------------------------------------------------------------------------

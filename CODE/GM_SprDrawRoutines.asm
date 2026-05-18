@@ -54,32 +54,32 @@ DrawVine:
     LD (HL), B
     INC L
     LD E, L
-    LD (HL), $50
+    LD (HL), $4F
     INC L
     LD (HL), A
     INC L
-    LD (HL), $51
+    LD (HL), $50
     INC L
     LD (HL), B
     INC L
-    LD (HL), $50
+    LD (HL), $4F
     INC L
     LD (HL), A
     INC L
-    LD (HL), $51
+    LD (HL), $50
     INC L
     LD (HL), B
     INC L
-    LD (HL), $50
+    LD (HL), $4F
     INC L
     LD (HL), A
     INC L
-    LD (HL), $51
+    LD (HL), $50
     LD L, E
 ;
     INC C
     JP NZ, SkpVTop
-    LD (HL), $52
+    LD (HL), $51
 ;
 SkpVTop:
     DEC L
@@ -245,16 +245,16 @@ FlagpoleGfxHandler:
     LD A, (Enemy_Rel_XPos)          ;get relative horizontal coordinate
     LD (HL), A                      ;store as X coordinate for first sprite
     INC L
-    LD (HL), $4F                    ;put triangle shaped tile into first
+    LD (HL), $4E                    ;put triangle shaped tile into first
     ADD A, $08                      ;add eight pixels and store
     INC L
     LD (HL), A                      ;as X coordinate for second sprite
     INC L
-    LD (HL), $4E                    ;put skull tile into second sprite
+    LD (HL), $4D                    ;put skull tile into second sprite
     INC L
     LD (HL), A                      ;as X coordinate for third sprite
     INC L
-    LD (HL), $4F                    ;put triangle shaped tile into third
+    LD (HL), $4E                    ;put triangle shaped tile into third
     EX DE, HL
 ;
     LD E, (HL)                      ;get sprite data offset for flagpole flag
@@ -307,12 +307,12 @@ DrawLargePlatform:
     LD E, (HL)
     SLA E
     SET 7, E
-    LD A, (CloudTypeOverride)
-    OR A
-    LD B, $40
-    JP Z, +
-    INC B
-+:
+    ;LD A, (CloudTypeOverride)
+    ;OR A
+    LD B, $52
+    ;JP Z, +
+    ;INC B
+;+:
     LD A, (Enemy_Rel_XPos)
     EX DE, HL
     LD (HL), A
@@ -623,11 +623,6 @@ EnemyGraphicsTable:
     .db $00, $00, $87, $88, $89, $8A  ;cheep-cheep frame 1 (red)
     .db $00, $00, $8B, $88, $8C, $8A  ;            frame 2 (red)
     ; ---
-    ;.db $CA, $CB, $CC, $CD, $CE, $CF  ;hammer bro frame 1
-    ;.db $CA, $CB, $D0, $D1, $D2, $D3  ;           frame 2
-    ;.db $D4, $D5, $D6, $D7, $CE, $CF  ;           frame 3
-    ;.db $D4, $D5, $D6, $D7, $D2, $D3  ;           frame 4
-
     .db $D0, $D1, $D2, $D3, $D4, $D5  ;hammer bro frame 1
     .db $D0, $D1, $D6, $D7, $D8, $D9  ;           frame 2
     .db $DA, $DB, $DC, $DD, $D4, $D5  ;           frame 3
@@ -636,11 +631,11 @@ EnemyGraphicsTable:
     .db $7D, $7E, $7F, $80, $81, $82  ;piranha plant frame 1
     .db $83, $84, $85, $86, $81, $82  ;              frame 2
     ; ---
-    .db $00, $5B, $A8, $A9, $AA, $AB  ;koopa troopa frame 1 (red) ($CC)
-    .db $00, $60, $AC, $AD, $AE, $AF  ;             frame 2 (red)
+    .db $00, $41, $A8, $A9, $AA, $AB  ;koopa troopa frame 1 (red) ($CC)
+    .db $00, $42, $AC, $AD, $AE, $AF  ;             frame 2 (red)
     ; ---
-    .db $65, $5B, $B0, $A9, $AA, $AB  ;koopa paratroopa frame 1 (red) ($D8)
-    .db $67, $60, $B1, $AD, $AE, $AF  ;                 frame 2 (red)
+    .db $43, $41, $B0, $A9, $AA, $AB  ;koopa paratroopa frame 1 (red) ($D8)
+    .db $44, $42, $B1, $AD, $AE, $AF  ;                 frame 2 (red)
     ; ---
     .db $00, $00, $C2, $C3, $C4, $C5  ;bullet bill
     ; ---
@@ -697,11 +692,6 @@ EnemyGraphicsTable_HFlip:
     .db $00, $00, $8D, $8E, $8F, $90  ;cheep-cheep frame 1 (red)
     .db $00, $00, $8D, $91, $8F, $92  ;            frame 2 (red)
     ; ---
-    ;.db $D8, $D9, $DA, $DB, $DC, $DD  ;hammer bro frame 1
-    ;.db $D8, $D9, $DE, $DF, $E0, $E1  ;           frame 2
-    ;.db $E2, $E3, $E4, $E5, $DC, $DD  ;           frame 3
-    ;.db $E2, $E3, $E4, $E5, $E0, $E1  ;           frame 4
-
     .db $DE, $DF, $E0, $E1, $E2, $E3  ;hammer bro frame 1
     .db $DE, $DF, $E4, $E5, $E6, $E7  ;           frame 2
     .db $E8, $E9, $EA, $EB, $E2, $E3  ;           frame 3
@@ -710,11 +700,11 @@ EnemyGraphicsTable_HFlip:
     .db $7D, $7E, $7F, $80, $81, $82  ;piranha plant frame 1
     .db $83, $84, $85, $86, $81, $82  ;              frame 2
     ; ---
-    .db $6F, $00, $B8, $B9, $BA, $BB  ;koopa troopa frame 1 (red)
-    .db $74, $00, $BC, $BD, $BE, $BF  ;             frame 2 (red)
+    .db $45, $00, $B8, $B9, $BA, $BB  ;koopa troopa frame 1 (red)
+    .db $46, $00, $BC, $BD, $BE, $BF  ;             frame 2 (red)
     ; ---
-    .db $6F, $79, $B8, $C0, $BA, $BB  ;koopa paratroopa frame 1 (red)
-    .db $74, $7B, $BC, $C1, $BE, $BF  ;                 frame 2 (red)
+    .db $45, $47, $B8, $C0, $BA, $BB  ;koopa paratroopa frame 1 (red)
+    .db $46, $48, $BC, $C1, $BE, $BF  ;                 frame 2 (red)
     ; ---
     .db $00, $00, $C6, $C7, $C8, $C9  ;bullet bill
     ; ---
@@ -1386,7 +1376,7 @@ PrincessTilesRight:
 .SECTION "DefaultBlockObjTiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 DefaultBlockObjTiles:
     .db $3B, $3B, $3B, $3B              ;breakable block
-    .db $42, $42, $3B, $3B              ;brick w/ line (these are sprite tiles, not BG!)
+    .db $40, $40, $3B, $3B              ;brick w/ line (these are sprite tiles, not BG!)
     .db $37, $38, $39, $3A              ;empty block
 .ENDS
 
@@ -1739,7 +1729,7 @@ DrawSmallPlatform:
     SLA E
     SET 7, E
     LD A, (Enemy_Rel_XPos)
-    LD B, $40
+    LD B, $52
     EX DE, HL
     ; TILE 0
     LD (HL), A
@@ -1982,6 +1972,158 @@ PlayerGraphicsTable:
     .db $3F, $3F, $6E, $6F, $70, $71, $72, $73
 .ENDS
 
+
+.SECTION "PlayerGraphicsTable (NES) EXTRA [SWIM, BIG]" BANK BANK_PLAYERGFX04 SLOT 2 FORCE ORG $0E68
+    .db $00, $01, $28, $29, $2A, $2B, $31, $2D
+    .db $00, $01, $28, $29, $2A, $2B, $31, $2D
+    .db $00, $01, $28, $29, $2A, $2B, $31, $2D
+.ENDS
+
+.SECTION "PlayerGraphicsTable (NES) EXTRA" BANK BANK_PLAYERGFX04 SLOT 2 FORCE ORG $0EB0
+    ; SWIM
+    .db $00, $01, $28, $29, $2A, $2B, $31, $2D  ; BIG ALT 1
+    .db $00, $01, $02, $03, $04, $2E, $31, $2D  ; BIG ALT 2
+    .db $00, $01, $02, $03, $2F, $30, $31, $2D  ; BIG ALT 3
+    .db $36, $36, $36, $36, $42, $43, $64, $4E  ; SMALL ALT 1
+    .db $36, $36, $36, $36, $42, $43, $64, $4F  ; SMALL ALT 2
+    ; ACTION
+    .db $00, $01, $28, $29, $2A, $2B, $06, $07
+    .db $00, $01, $28, $29, $2A, $2B, $0E, $0F
+    .db $00, $01, $28, $29, $2A, $2B, $16, $17
+
+    .db $00, $01, $28, $29, $2A, $2B, $60, $61
+
+    .db $00, $01, $28, $29, $2A, $2B, $1E, $1F
+
+    .db $00, $01, $28, $29, $2A, $2B, $26, $27
+
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+.ENDS
+
+.SECTION "PlayerGraphicsTable (NES)" BANK BANK_PLAYERGFX04 SLOT 2 FORCE ORG $0F20
+;   $0F20
+    ; BIG
+    .db $00, $01, $02, $03, $04, $05, $06, $07
+    .db $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
+    .db $10, $11, $12, $13, $14, $15, $16, $17
+
+    .db $10, $11, $5A, $5B, $5E, $5F, $60, $61
+
+    .db $18, $19, $1A, $1B, $1C, $1D, $1E, $1F
+
+    .db $20, $21, $22, $23, $24, $25, $26, $27
+
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+    .db $00, $01, $02, $03, $04, $2E, $2C, $2D
+    .db $00, $01, $02, $03, $2F, $30, $2C, $2D  ;.db $00, $01, $02, $03, $2F, $30, $31, $2D  ; $31
+
+    .db $00, $01, $28, $29, $2A, $2B, $32, $33
+    .db $00, $01, $02, $03, $04, $05, $34, $35
+
+    .db $36, $36, $00, $01, $37, $38, $39, $3A
+    
+    .db $00, $01, $28, $29, $2A, $2B, $06, $07
+    ; SMALL
+    .db $36, $36, $36, $36, $3B, $3C, $3D, $3E
+    .db $36, $36, $36, $36, $3F, $3C, $40, $41
+    .db $36, $36, $36, $36, $42, $43, $44, $45
+
+    .db $36, $36, $36, $36, $3F, $3C, $62, $63
+
+    .db $36, $36, $36, $36, $46, $47, $48, $49
+
+    .db $36, $36, $36, $36, $42, $4A, $4B, $4C
+
+    .db $36, $36, $36, $36, $42, $43, $4D, $4E
+    .db $36, $36, $36, $36, $42, $43, $4D, $4F
+    .db $36, $36, $36, $36, $42, $43, $50, $51  ; $50
+
+    .db $36, $36, $36, $36, $42, $43, $52, $53
+    .db $36, $36, $36, $36, $3F, $3C, $54, $55
+
+    .db $36, $36, $36, $36, $56, $57, $58, $59
+
+    .db $36, $36, $10, $11, $5A, $5B, $5C, $5D
+.ENDS
+
+.SECTION "PlayerGraphicsTable_HFLIP (NES) EXTRA [SWIM, BIG]" BANK BANK_PLAYERGFX05 SLOT 2 FORCE ORG $0E68
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $31
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $31
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $31
+.ENDS
+
+.SECTION "PlayerGraphicsTable_HFLIP (NES) EXTRA" BANK BANK_PLAYERGFX05 SLOT 2 FORCE ORG $0EB0
+    ; SWIM
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $31  ; BIG ALT 1
+    .db $00, $01, $02, $03, $2E, $05, $2C, $31  ; BIG ALT 2
+    .db $00, $01, $02, $03, $2F, $30, $2C, $31  ; BIG ALT 3
+    .db $36, $36, $36, $36, $42, $43, $4D, $64  ; SMALL ALT 1
+    .db $36, $36, $36, $36, $42, $43, $4F, $64  ; SMALL ALT 2
+    ; ACTION
+    .db $00, $01, $28, $29, $2A, $2B, $06, $07
+    .db $00, $01, $28, $29, $2A, $2B, $0E, $0F
+    .db $00, $01, $28, $29, $2A, $2B, $16, $17
+
+    .db $00, $01, $28, $29, $2A, $2B, $60, $61
+
+    .db $00, $01, $28, $29, $2A, $2B, $1E, $1F
+
+    .db $00, $01, $28, $29, $2A, $2B, $26, $27
+
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D  ; $0F08
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+.ENDS
+
+.SECTION "PlayerGraphicsTable_HFLIP (NES)" BANK BANK_PLAYERGFX05 SLOT 2 FORCE ORG $0F20
+;   $0F20
+    ; BIG
+    .db $00, $01, $02, $03, $04, $05, $06, $07
+    .db $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
+    .db $10, $11, $12, $13, $14, $15, $16, $17
+
+    .db $10, $11, $5A, $5B, $5E, $5F, $60, $61
+
+    .db $18, $19, $1A, $1B, $1C, $1D, $1E, $1F
+
+    .db $20, $21, $22, $23, $24, $25, $26, $27
+
+    .db $00, $01, $28, $29, $2A, $2B, $2C, $2D
+    .db $00, $01, $02, $03, $2E, $05, $2C, $2D
+    .db $00, $01, $02, $03, $2F, $30, $2C, $2D  ; $31
+
+    .db $00, $01, $28, $29, $2A, $2B, $32, $33
+    .db $00, $01, $02, $03, $04, $05, $34, $35
+
+    .db $36, $36, $00, $01, $37, $38, $39, $3A
+
+    .db $00, $01, $28, $29, $2A, $2B, $06, $07
+    ; SMALL
+    .db $36, $36, $36, $36, $3B, $3C, $3D, $3E
+    .db $36, $36, $36, $36, $3B, $3F, $40, $41
+    .db $36, $36, $36, $36, $42, $43, $44, $45
+
+    .db $36, $36, $36, $36, $3B, $3F, $62, $63
+
+    .db $36, $36, $36, $36, $46, $47, $48, $49
+
+    .db $36, $36, $36, $36, $4A, $43, $4B, $4C
+
+    .db $36, $36, $36, $36, $42, $43, $4D, $4E
+    .db $36, $36, $36, $36, $42, $43, $4F, $4E
+    .db $36, $36, $36, $36, $42, $43, $50, $51
+
+    .db $36, $36, $36, $36, $42, $43, $52, $53
+    .db $36, $36, $36, $36, $3B, $3F, $54, $55
+
+    .db $36, $36, $36, $36, $56, $57, $58, $59
+
+    .db $36, $36, $10, $11, $5A, $5B, $5C, $5D
+.ENDS
+
+
 .SECTION "PlayerFixedTiles" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8
 PlayerFixedTiles:
     .db VRAM_IDX_SPR_PLR + $00, VRAM_IDX_SPR_PLR + $01
@@ -2007,8 +2149,11 @@ CntPl:
     OR A
     JP NZ, DoChangeSize                 ;then branch to some other code
 ;
-    /*
-    ; All this is for lower body swim tile changes (ignore)
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP Z, FindPlayerAction
+;
+    ; All this is for lower body swim tile changes
     LD A, (SwimmingFlag)                ;if swimming flag set, branch to
     OR A
     JP Z, FindPlayerAction              ;different part, do not return
@@ -2022,18 +2167,24 @@ CntPl:
     AND A, %00000100                    ;check frame counter for d2 set (8 frames every
     RET NZ                              ;eighth frame), and branch if set to leave
 ;
-    ;tax
-    LD A, (Player_SprDataOffset)
-    LD C, A
-    LD A, (PlayerFacingDir)
-    RRCA
-    JP C, SwimKT
-    INC C
-SwimKT:
+    LD HL, (PlayerGfxOffset)
     LD A, (PlayerSize)
     OR A
     JP Z, BigKTS
-    */
+    LD A, L
+    CP A, <PlayerGraphicsTable + $A8
+    RET Z
+    LD A, $10
+    DEC H
+    addAToHL_M
+    LD (PlayerGfxOffset), HL
+    RET
+BigKTS:
+    LD A, $60
+    DEC H
+    addAToHL_M
+    LD (PlayerGfxOffset), HL
+    RET
 
 
 FindPlayerAction:
@@ -2091,9 +2242,24 @@ PlayerGfxProcessing:
     LD (HL), $00                        ;initialize fireball throw timer
     JP NC, PlayerOffscreenChk           ;if animation frame timer => fireball throw timer skip to end
     LD (HL), A                          ;otherwise store animation timer into fireball throw timer
+
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP Z, +
+    LD A, (Player_X_Speed)
+    LD HL, Left_Right_Buttons
+    OR A, (HL)
+    JP Z, +
+    LD HL, (PlayerGfxOffset)
+    LD A, $B8
+    DEC H
+    addAToHL_M
+    LD (PlayerGfxOffset), HL
+    JP PlayerOffscreenChk
++:
     LD A, <PlayerGraphicsTable@bigAction    ;load offset for player throwing
     LD (PlayerGfxOffset), A
-
+    ; FALL THROUGH
 
 PlayerOffscreenChk:
     LD A, (Player_OffscrBits)           ;get player's offscreen bits

@@ -657,9 +657,13 @@ PlayerFireFlower:
     LD A, (FrameCounter)                ;get frame counter
     RRCA                                ;divide by four to change every four frames
     RRCA                             
-
+    ; FALL THROUGH
+    
 CyclePlayerPalette:
     AND A, $03                          ;mask out all but d1-d0 (previously d3-d2)
+    LD HL, OptionBitflags
+    BIT 0, (HL)
+    JP NZ, CyclePlayerPalette_NES
     LD IXL, A                           ;store result here to use as palette bits
     LD A, (Player_SprAttrib)            ;get player attributes
     AND A, %11111100                    ;save any other bits but palette bits
@@ -667,12 +671,33 @@ CyclePlayerPalette:
     LD (Player_SprAttrib), A            ;store as new player attributes
     RET
 
+CyclePlayerPalette_NES:
+    ADD A, A
+    ADD A, A
+    ADD A, <SPRColorRotatePalettes
+    LD E, A
+    LD D, >SPRColorRotatePalettes
+    LD A, (AreaType)
+    ADD A, A
+    ADD A, A
+    ADD A, A
+    ADD A, A
+    addAToDE8_M
+    JP WritePlayerClrStripeCmd
+
 ResetPalFireFlower:
+    LD A, (OptionBitflags)
+    AND A, $01
+    JP NZ, +
     LD A, (Player_SprAttrib)
     AND A, %11111100
     OR A, $02
     LD (Player_SprAttrib), A
     JP DonePlayerTask                 ;do sub to init timer control and run player control routine
++:
+    LD DE, PlayerColors + $08
+    CALL WritePlayerClrStripeCmd
+    JP DonePlayerTask
     ;CALL DonePlayerTask
 
 ResetPalStar:

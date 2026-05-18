@@ -2,7 +2,9 @@
 
 VictoryMode:
     CALL VictoryModeSubroutines     ;run victory mode subroutines
-    CALL ColorRotation              ;update tile animations
+    LD A, (OptionBitflags)
+    AND A, $01
+    CALL Z, AnimateBGTiles          ;update tile animations
     LD A, (OperMode_Task)           ;get current task of victory mode
     OR A
     JP Z, @AutoPlayer               ;if on bridge collapse, skip enemy processing
@@ -33,14 +35,16 @@ SetupVictoryMode:
     LD A, SNDID_WORLDDONE
     LD (MusicTrack0.SoundQueue), A  ;play win castle music (EVENT)
 ;
-    LD A, (WorldNumber)
+    LD A, (OptionBitflags)          ;skip if on NES graphics
+    AND A, $01
+    JP NZ, IncModeTask_B
+    LD A, (WorldNumber)             ;load either retainer or princess palettes
     CP A, WORLD8
     LD A, VRAMTBL_RETAINERPAL
     JP NZ, +
     INC A
 +:
     LD (VRAM_Buffer_AddrCtrl), A
-;
     JP IncModeTask_B                ;jump to set next major task in victory mode
 
 ;-------------------------------------------------------------------------------------

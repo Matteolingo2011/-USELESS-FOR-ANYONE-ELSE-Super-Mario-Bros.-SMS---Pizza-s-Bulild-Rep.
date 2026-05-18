@@ -687,7 +687,7 @@
     FireballCounter:                dsb $01
     DuplicateObj_Offset:            dsb $02
     LakituReappearTimer:            dsb $01
-    ;ColorRotateOffset:              dsb $01
+    ColorRotateOffset:              dsb $01
     PlayerGfxOffset:                dsb $02 ; became absolute address
     PlayerGfxOffset_Old:            dsb $02 ; for detecting sprite changes
     PlayerGfxBank:                  dsb $01 ; determines player character
@@ -892,6 +892,11 @@
 
 ;-------------------------------------------------------------------------------------
 .RAMSECTION "RAM Page 1F" SLOT 34
+    OptionBitflags:                 dsb $01
+    AnimateRoutine:                 dsb $02
+    BowserDrawRoutine:              dsb $02
+    PlayerTileBuffer:               dsb $08
+;
     FrameDoneFlag:                  dsb $01
 ;
     MDControllerBits:               dsb $01
