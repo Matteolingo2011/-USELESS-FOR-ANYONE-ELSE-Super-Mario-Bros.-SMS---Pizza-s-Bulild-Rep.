@@ -2316,7 +2316,7 @@ Palette1_MTiles:
     ; Breakable bricks
     .dw BG_MACRO($019B), BG_MACRO($01A4), BG_MACRO($019B), BG_MACRO($01A4)  ; shiny
     .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; normal
-    .dw BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4), BG_MACRO($01A4)  ; unused
+    .dw BG_MACRO($11A4), BG_MACRO($11A4), BG_MACRO($11A4), BG_MACRO($11A4)  ; unused (now used for brick priority)
     ; Rock Terrain
     .dw BG_MACRO($019C), BG_MACRO($019D), BG_MACRO($019E), BG_MACRO($019F)
     .dw BG_MACRO($119C), BG_MACRO($119D), BG_MACRO($119E), BG_MACRO($119F)  ; rock PRIORITY (NEW)
@@ -2350,8 +2350,9 @@ Palette1_MTiles:
     .dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)              ; half brick 
     ; Solid brick for water levels
     .dw $01BF, $01C0, $01C1, $01C2
+    .dw $11BF, $11C0, $11C1, $11C2
     ; Half brick (unused?)
-    .dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)
+    ;.dw BLANKTILE, BG_MACRO($01A4), BLANKTILE, BG_MACRO($01A4)
     ; Water pipe
     .dw BG_MACRO($116C), BG_MACRO($116D), BG_MACRO($116E), BG_MACRO($116F)
     .dw BG_MACRO($1174), BG_MACRO($1175), BG_MACRO($1176), BG_MACRO($1177)

@@ -1429,6 +1429,8 @@ WaterPipe:
     LD (HL), MT_WATERPIPE_TOP           ;draw something here and below it
     INC L
     LD (HL), MT_WATERPIPE_BOT
+    INC L
+    INC (HL)
     RET
 
 ;--------------------------------
@@ -1522,6 +1524,12 @@ DrawSidePart:
     LD A, (HL)                          ;backwards horizontally
     INC E
     LD (DE), A
+;
+    INC E
+    LD A, (DE)
+    INC A
+    LD (DE), A
+;
     POP AF                              ;return flags for IntroPipe
     RET
 
