@@ -172,25 +172,131 @@ Start:
     CALL SndStopAll@WritePSG
 ;   RESET GRAPHIC & SOUND BITFLAGS
     XOR A
-    ;LD A, $01
     LD (OptionBitflags), A
-
-
-;
-    LD A, (OptionBitflags)
+;   ------ OPTION SCREEN PROCESS ------
+    ; LOAD BACKGROUND DATA
+    LD A, :Tiles_BG_Options
+    LD (MAPPER_SLOT2), A
+    LD HL, Tiles_BG_Options
+    LD DE, VRAM_ADR_BG | VRAMWRITE
+    CALL zx7_decompressVRAM
+    LD HL, Map_BG_Options
+    LD DE, VRAM_ADR_NAMETBL | VRAMWRITE
+    CALL zx7_decompressVRAM
+    LD HL, $0000 | CRAMWRITE
+    RST setVDPAddress
+    LD HL, Pal_BG_Options
+    LD BC, _sizeof_Pal_BG_Options * $100 + VDPDATA_PORT
+    OTIR
+    LD A, BANK_SLOT2
+    LD (MAPPER_SLOT2), A
+    ; INITIALIZE BASIC MEMORY
+    LD HL, WarmBootOffset
+    CALL InitializeMemory
+    LD A, $01
+    LD (FrameDoneFlag), A
+    LD (PlayerStatus), A
+    LD (Player_X_Speed), A
+    LD (Player_SprDataOffset), A
+    LD (PlayerFacingDir), A
+    LD (OperMode), A
+    LD A, $07
+    LD (PlayerAnimTimerSet), A
+    LD A, $40
+    LD (DisableScreenFlag), A
+    LD A, $D0
+    LD (Sprite_Y_Position + $09), A
+    LD A, $20
+    LD (Player_Rel_XPos), A
+    ADD A, SMS_PIXELYOFFSET
+    LD (Player_Rel_YPos), A
+    CALL PlayerGfxHandler
+    ;
+    CALL waitForVblank
+    IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
+    EI
+OptionsLoop:
+    LD A, (Temp_Bytes + $01)        ;check if leaving options menu
+    OR A
+    JP Z, OptionsCheckJoypad        ;if not, skip
+    LD A, (SFXTrack0.Control)       ;check if sfx has finished playing
+    OR A
+    JP P, MainGameInit              ;if so, go to main game
+OptionsCheckJoypad:
+    LD HL, SavedJoypad1Bits         ;debounce inputs
+    LD B, (HL)
+    LD A, (Temp_Bytes + $00)
+    XOR A, (HL)
+    AND A, (HL)
+    LD (HL), A
+    LD A, B
+    LD (Temp_Bytes + $00), A
+    LD A, (HL)
+    AND A, $01 << SMS_BTN_UP | $01 << SMS_BTN_DOWN
+    JP Z, OptionCheckBtn1           ;if neither up or down is pressed, skip
+    AND A, $01 << SMS_BTN_UP        ;check if up is pressed
+    LD A, (OptionBitflags)          ;clear bit 0 of bit flags by default
+    RES 0, A
+    JP NZ, +                        ;if so, skip
+    SET 0, A                        ;else, set bit 0 (do NES gfx)
++:
+    LD (OptionBitflags), A
+    LD A, SNDID_BEEP                ;do beep sfx
+    LD (SFXTrack0.SoundQueue), A
+    LD (PlayerGfxOffset_Old + $01), A   ;invalidate old player gfx offset to refresh
+OptionCheckBtn1:
+    LD A, (SavedJoypad1Bits)        ;check if button 1 is being pressed
+    AND A, $01 << SMS_BTN_1
+    JP Z, +                         ;if not, skip
+    LD A, $01                       ;set flag to signal that we are leaving the options menu
+    LD (Temp_Bytes + $01), A
+    LD A, SNDID_BEEP                ;do beep sfx
+    LD (SFXTrack0.SoundQueue), A
++:
+    LD HL, PlayerAnimTimer          ;update timer for walking animation
+    DEC (HL)
+    LD A, (OptionBitflags)          ;set values depending on bit 0 of option bit flags
     OR A
     JP NZ, +
+    LD A, BANK_PLAYERGFX00
+    LD (PlayerGfxBank), A
+    LD A, VRAMTBL_BOWSERPAL
+    LD (VRAM_Buffer_AddrCtrl), A
+    LD A, $38
+    LD (Player_Rel_YPos), A
     LD HL, AnimateBGTiles
     LD (AnimateRoutine), HL
     LD HL, BowserGfxDraw
     LD (BowserDrawRoutine), HL
-    JP LoadConstantTiles
+    JP OptionDrawPlayer
 +:
+    LD A, BANK_PLAYERGFX04
+    LD (PlayerGfxBank), A
+    LD A, VRAMTBL_BOWSERPAL + $15
+    LD (VRAM_Buffer_AddrCtrl), A
+    LD A, $38 + $68
+    LD (Player_Rel_YPos), A
     LD HL, ColorRotation
     LD (AnimateRoutine), HL
     LD HL, BowserGfxDraw_NES
     LD (BowserDrawRoutine), HL
-LoadConstantTiles:
+OptionDrawPlayer:
+    CALL PlayerGfxHandler           ;draw player
+    CALL SoundEngine                ;do sound processing
+    LD A, $01                       ;signal that we have completed a frame on time
+    LD (FrameDoneFlag), A
+OptionNMIWait:
+    LD A, (FrameDoneFlag)           ;busy loop until NMI has triggered
+    OR A
+    JP NZ, OptionNMIWait
+    JP OptionsLoop
+;   ------ END OF OPTION SCREEN PROCESS ------
+MainGameInit:
+    DI                              ;disable interrupts
+    LD A, %10100000                 ;turn off screen
+    OUT (VDPCON_PORT), A
+    LD A, $81
+    OUT (VDPCON_PORT), A
 ;   LOAD CONSTANT BACKGROUND TILES
     LD A, ASSET_BGCOMM
     CALL AssetLoader
@@ -232,6 +338,7 @@ ColdBoot:
     CALL waitForVblank
     IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
     EI                              ;enable Z80 interrupts
+    ; MAIN LOOP START
 EndlessLoop:
     ; SKIP TO PAUSE ROUTINE IF GAME IS PAUSED
     LD A, (GamePauseStatus)
@@ -347,7 +454,7 @@ NMIWait:
 VRAM_AddrTable:
     .dw VRAM_Buffer1, WaterPaletteData, GroundPaletteData,
     .dw UndergroundPaletteData, CastlePaletteData, TitleScreenData
-    .dw VRAM_Buffer2, VRAM_Buffer2, VRAM_Buffer2                   ; Second VRAM_Buffer2 is never used?
+    .dw VRAM_Buffer2, VRAM_Buffer2, OptionsPaletteData                   ; Second VRAM_Buffer2 is never used?
     .dw DaySnowPaletteData, NightSnowPaletteData, MushroomPaletteData
     .dw MarioThanksMessage, LuigiThanksMessage, MushroomRetainerSaved
     .dw PrincessSaved1, PrincessSaved2, WorldSelectMessage1
@@ -355,7 +462,7 @@ VRAM_AddrTable:
     ;
     .dw VRAM_Buffer1, WaterPaletteData_NES, GroundPaletteData_NES
     .dw UndergroundPaletteData_NES, CastlePaletteData_NES, TitleScreenData_NES
-    .dw VRAM_Buffer2, VRAM_Buffer2, VRAM_Buffer2
+    .dw VRAM_Buffer2, VRAM_Buffer2, OptionsPaletteData_NES
     .dw DaySnowPaletteData_NES, NightSnowPaletteData_NES, MushroomPaletteData_NES 
 .ENDS
 
@@ -1645,6 +1752,14 @@ PrincessPaletteData:
     .db $00
 .ENDS
 
+.SECTION "Options Palette Data" BANK BANK_SLOT2 SLOT 2 FREE
+OptionsPaletteData:
+    .dw swapBytes($C010)
+    .db StripeCount($10)
+    .db $00, $00, $01, $06, $0B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
+    .db $00
+.ENDS
+
 ;-------------------------------------------------------------------------------------
 
 .SECTION "Water AreaType Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
@@ -1717,6 +1832,14 @@ MushroomPaletteData_NES:
     ; .db $08, $3F, $0B
     ; .db $00
 ; .ENDS
+
+.SECTION "Options Palette Data (NES)" BANK BANK_SLOT2 SLOT 2 FREE
+OptionsPaletteData_NES:
+    .dw swapBytes($C010)
+    .db StripeCount($10)
+    .db $00, $03, $0B, $06, $08, $3F, $0B, $03, $3F, $0B, $00, $2B, $06, $03, $0B, $06
+    .db $00
+.ENDS
 
 ;-------------------------------------------------------------------------------------
 .SECTION "'Thank You Mario' MSG Data" BANK BANK_SLOT2 SLOT 2 FREE
@@ -2582,6 +2705,24 @@ Tiles_SPR_Bowser_NES:
 .ENDS
 
 .INCDIR "ASSETS"
+
+.SECTION "Options BG Tiles" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Tiles_BG_Options:
+    .INCBIN "BG_Options.zx7"
+.ENDS
+
+.SECTION "Options BG Tilemap" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+
+Map_BG_Options:
+    .INCBIN "MAP_Options.zx7"
+.ENDS
+
+.SECTION "Options BG Palette" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+Pal_BG_Options:
+    .db $00 $01 $02 $03 $06 $0B $0F $2B $3F
+.ENDS
+
 ;-------------------------------------------------------------------------------------
 .SECTION "Uncompressed Player Tiles - Mario [Right, Palette 0]" BANK BANK_PLAYERGFX00 SLOT 2 FORCE ORG $0000
 .INCLUDE "SPR_Mario00.inc"

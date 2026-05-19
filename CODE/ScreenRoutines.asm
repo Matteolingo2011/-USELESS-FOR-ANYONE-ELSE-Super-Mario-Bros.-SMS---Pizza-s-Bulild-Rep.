@@ -409,6 +409,20 @@ DrawTitleScreen:
     CALL AssetLoader
     LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
+;   UPLOAD PLAYER EMBLEM
+    LD A, (CurrentPlayer)
+    OR A
+    LD A, ASSET_EMBLEM_M
+    JP Z, +
+    INC A
++:
+    CALL AssetLoader
+    LD (MAPPER_SLOT2), A
+    EX DE, HL
+    RST setVDPAddress
+    EX DE, HL
+    LD BC, $20 * $100 + VDPDATA_PORT
+    OTIR
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     EI
