@@ -968,24 +968,26 @@ WriteGameText:
     INC HL
     LD DE, VRAM_Buffer1
     LDIR                                    ;WRITE MESSAGE DATA TO BUFFER
-@EndGameText:
+;EndGameText:
     XOR A                                   ;put null terminator at end
     LD (DE), A
     POP AF                                  ;pull original text number from stack
     CP A, $04                               ;are we printing warp zone?
-    JP NC, @PrintWarpZoneNumbers
-    DEC A                                   ;are we printing the world/lives display?
-    JP NZ, @CheckPlayerName                 ;if not, branch to check player's name
+    JP NC, PrintWarpZoneNumbers
+    CP A, $02                               ;are we printing the time up or game over screen?
+    JP NC, CheckPlayerName                  ;if so, print player's name
+    OR A                                    ;are we printing the top status bar?
+    RET Z                                   ;if so, we're done
     LD A, (NumberofLives)                   ;otherwise, check number of lives
     INC A                                   ;and increment by one for display
     CP A, $10                               ;more than 9 lives?
-    JP C, @PutLives
+    JP C, PutLives
     SUB A, $10                              ;if so, subtract 10 and put a crown tile
     LD HL, VRAM_Buffer1 + $0F               ;next to the difference...strange things happen if
     LD (HL), BG_MACRO($0E)                  ;the number of lives exceeds 19
     INC L
     LD (HL), $01
-@PutLives:
+PutLives:
     ADD A, BG_TILE_OFFSET
     LD (VRAM_Buffer1 + $0D), A                    
     LD A, (WorldNumber)                     ;write world and level numbers (incremented for display)
@@ -996,25 +998,23 @@ WriteGameText:
     LD (VRAM_Buffer1 + $24), A              ;we're done here
     RET
 
-@CheckPlayerName:
-    LD A, (NumberOfPlayers)
+CheckPlayerName:
+    LD A, (NumberOfPlayers)                 ;are we doing a 2 player game?
     OR A
-    RET Z
+    RET Z                                   ;if not, exit
 ;
-    LD HL, MarioName
+    LD HL, MarioName                        ;load name based on which player is currently playing
     LD A, (CurrentPlayer)
     OR A
     JP Z, +
     LD HL, LuigiName
 +:
-    LD C, (HL)                              ;LOAD BYTE COUNT
-    LD B, $00
-    INC HL
-    LD DE, VRAM_Buffer1 + $15
+    LD BC, $000A
+    LD DE, VRAM_Buffer1 + $03
     LDIR                                    ;WRITE MESSAGE DATA TO BUFFER
     RET
 
-@PrintWarpZoneNumbers:
+PrintWarpZoneNumbers:
     SUB A, $04                              ;subtract 4 and then shift to the left
     ADD A, A                                ;thrice to get proper warp zone number
     ADD A, A                                ;offset
@@ -2217,6 +2217,9 @@ GameOverDisplay:
     ;.db $18, $1f, $0e, $1b
     ;.db $ff
     .db @end-GameOverDisplay - 1
+    .dw swapBytes(xyToNameTbl_M(13, 11))
+    .db StripeCount($0A)
+    .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
     .dw swapBytes(xyToNameTbl_M(11, 13))
     .db StripeCount($12)
     .dw BG_MACRO($0117), BG_MACRO($0111), BG_MACRO($0110), BG_MACRO($0118), BLANKTILE, BG_MACRO($0114), BG_MACRO($0119), BG_MACRO($0118), BG_MACRO($0112)
@@ -2228,6 +2231,9 @@ TimeUpDisplay:
     ;.db $22, $0c, $07, $1d, $12, $16, $0e, $24, $1e, $19 ; "TIME UP"
     ;.db $ff
     .db @end-TimeUpDisplay - 1
+    .dw swapBytes(xyToNameTbl_M(13, 11))
+    .db StripeCount($0A)
+    .dw BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE, BLANKTILE
     .dw swapBytes(xyToNameTbl_M(12, 13))
     .db StripeCount($0E)
     .dw BG_MACRO($011A), BG_MACRO($0113), BG_MACRO($0110), BG_MACRO($0118), BLANKTILE, BG_MACRO($0116), BG_MACRO($011B)
@@ -2272,21 +2278,13 @@ WarpZoneWelcome:
 .SECTION "Mario Name Stripe Data" BANK BANK_SLOT2 SLOT 2 FREE
 MarioName:
     ;.db $21, $cd, $05, $16, $0a, $1b, $12, $18 ; "MARIO"
-    .db @end-MarioName - 1
-    .dw swapBytes(xyToNameTbl_M(13, 11))
-    .db StripeCount($0A)
     .dw BG_MACRO($0110), BG_MACRO($0111), BG_MACRO($0112), BG_MACRO($0113), BG_MACRO($0114)
-@end:
 .ENDS
 
 .SECTION "Luigi Name Stripe Data" BANK BANK_SLOT2 SLOT 2 FREE
 LuigiName:
     ;.db $15, $1e, $12, $10, $12    ; "LUIGI", no address or length
-    .db @end-LuigiName - 1
-    .dw swapBytes(xyToNameTbl_M(13, 11))
-    .db StripeCount($0A)
     .dw BG_MACRO($0115), BG_MACRO($0116), BG_MACRO($0113), BG_MACRO($0117), BG_MACRO($0113)
-@end:
 .ENDS
 
 .SECTION "WarpZone Numbers Stripe Data" BANK BANK_SLOT2 SLOT 2 FREE
