@@ -134,6 +134,11 @@ ResetScreenTimer:
 ;-------------------------------------------------------------------------------------
 
 DisplayIntermediate:
+    LD A, %10100000                 ;turn off screen for now
+    OUT (VDPCON_PORT), A
+    LD A, $81
+    OUT (VDPCON_PORT), A
+;
     LD A, (OperMode)                ;check primary mode of operation
     OR A
     JP Z, NoInter                   ;if in title screen mode, skip this
