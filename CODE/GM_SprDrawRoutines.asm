@@ -307,12 +307,7 @@ DrawLargePlatform:
     LD E, (HL)
     SLA E
     SET 7, E
-    ;LD A, (CloudTypeOverride)
-    ;OR A
-    LD B, $52
-    ;JP Z, +
-    ;INC B
-;+:
+    LD B, $52                   ;cloud and lift share the same tile index
     LD A, (Enemy_Rel_XPos)
     EX DE, HL
     LD (HL), A
@@ -538,20 +533,18 @@ PowerUpGfxTable:
 .ENDS
 
 DrawPowerUp:
+    LD HL, (Enemy_Y_Position + $0500)           ;don't display powerup if it is below visible screen
+    LD DE, $01D8                                ;to avoid sprite terminator
+    OR A
+    SBC HL, DE
+    JP NC, SprObjectOffscrChk
+;
     LD A, (Enemy_SprDataOffset + $05 * $100)
     LD E, A
     LD D, >Sprite_Y_Position
 ;
     LD A, (Enemy_Rel_YPos)
     ADD A, $08 - SMS_PIXELYOFFSET
-
-    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
-    CP A, $D0
-    JP NZ, +
-    INC A
-+:
-    ; ---
-
     LD B, A
     LD A, (Enemy_Rel_XPos)
     LD C, A
@@ -761,6 +754,17 @@ EnemyGfxTableOffsets:
 ; .ENDE
 
 EnemyGfxHandler:
+    LD L, <Enemy_Y_Position                 ;don't display enemy if it is below visible screen
+    LD A, (HL)                              ;to avoid sprite terminator
+    INC L
+    LD H, (HL)
+    LD L, A
+    LD DE, $01D0                                
+    OR A
+    SBC HL, DE
+    JP NC, SprObjectOffscrChk
+    LD HL, (ObjectOffset)
+;
     LD L, <Enemy_Y_Position                 ;get enemy object vertical position
     LD A, (HL)
     SUB A, SMS_PIXELYOFFSET
@@ -1051,16 +1055,7 @@ CheckDefeatedState:
     LD IXH, $00
 
 DrawEnemyObject:
-    ;LD B, D
-
-    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
-    LD A, D
-    CP A, $D0
-    JP NZ, +
-    INC A
-+:
-    ; -----
-    LD B, A
+    LD B, D
 
     LD A, (Temp_Bytes + $05)
     LD C, A
@@ -1086,7 +1081,7 @@ DrawEnemyObject:
     DrawSpriteObject_XT
     DrawSpriteObject_XT
     DrawSpriteObject_XT
-
+    ; FALL THROUGH
 
 SprObjectOffscrChk:
     LD D, >Sprite_Y_Position
@@ -1772,8 +1767,11 @@ DrawSmallPlatform:
     LD E, (HL)
     LD L, <Enemy_Y_Position
     LD A, (HL)
+    CP A, $D8
+    JP NC, +
     CP A, $20
     JP NC, TopSP
++:
     LD A, (YPOS_OFFSCREEN + SMS_PIXELYOFFSET) & 0xFF
 TopSP:
     SUB A, SMS_PIXELYOFFSET
@@ -1787,8 +1785,11 @@ TopSP:
     LD L, <Enemy_Y_Position
     LD A, (HL)
     ADD A, $80
+    CP A, $D8
+    JP NC, +
     CP A, $20
     JP NC, BotSP
++:
     LD A, (YPOS_OFFSCREEN + SMS_PIXELYOFFSET) & 0xFF
 BotSP:
     SUB A, SMS_PIXELYOFFSET
@@ -2133,6 +2134,12 @@ PlayerFixedTiles:
 .ENDS
 
 PlayerGfxHandler:
+    LD HL, (Player_Y_Position)          ;don't draw player if they are under the visible screen
+    LD DE, $01D0                        ;to avoid sprite terminator
+    OR A
+    SBC HL, DE
+    RET NC
+;
     LD A, (InjuryTimer)                 ;if player's injured invincibility timer
     OR A
     JP Z, CntPl                         ;not set, skip checkpoint and continue code
@@ -2332,13 +2339,6 @@ RenderPlayerSub:
 ;
     LD A, (Player_Rel_YPos)
     SUB A, SMS_PIXELYOFFSET
-
-    ; FIX TO NOT TRIGGER SPRITE TERMINATOR
-    CP A, $D0
-    JP NZ, +
-    INC A
-+:
-    ; ---
     LD B, A                             ;store player's vertical position
     
 

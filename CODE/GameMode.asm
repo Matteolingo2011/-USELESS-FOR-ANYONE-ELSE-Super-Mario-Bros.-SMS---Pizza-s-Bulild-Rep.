@@ -1356,8 +1356,8 @@ ChkBowserF:
 LoopCmdData:
     ;.db $12, $40, $05, $03
     ;.db $36, $B0, $09, $03
-    .db $1A, $40, $05, $03
-    .db $6A, $B0, $09, $03
+    .db $20, $40, $05, $03
+    .db $70, $B0, $09, $03
     
 
     ; .db $0E, $B0, $04, $06
@@ -2853,7 +2853,7 @@ SetupGFB:
     CALL FirebarCollision                       ;draw fireball part and do collision detection
 ;
     LD IYH, $05                                 ;load value for short firebars by default
-    LD A, IXL   ; Enemy_ID
+    LD A, IXL                                   ; Enemy_ID
     CP A, $1F                                   ;are we doing a long firebar?
     JP C, SetMFbar                              ;no, branch then
     LD IYH, $0B                                 ;otherwise load value for long firebars
@@ -2875,6 +2875,7 @@ DrawFbar:
     LD D, >Sprite_X_Position
 NextFbar:
     INC IXH                                     ;move onto the next firebar part
+    LD A, IXH
     CP A, IYH                                   ;if we end up at the maximum part, go on and leave
     JP C, DrawFbar                              ;otherwise go back and do another
     POP HL                                      ;(SMS)restore Object_Offset
@@ -3618,6 +3619,17 @@ ProcessBowserHalf:
 ; 11 - REAR FOOT, MOUTH CLOSED
 
 BowserGfxDraw:
+    LD L, <Enemy_Y_Position                 ;don't display enemy if it is below visible screen
+    LD A, (HL)                              ;to avoid sprite terminator
+    INC L
+    LD H, (HL)
+    LD L, A
+    LD DE, $01D0                                
+    OR A
+    SBC HL, DE
+    JP NC, SprObjectOffscrChk
+    LD HL, (ObjectOffset)
+;
     LD L, <Enemy_Y_Position                 ;get enemy object vertical position
     LD A, (HL)
     SUB A, SMS_PIXELYOFFSET - $08
@@ -3801,6 +3813,17 @@ BowserSpriteFramesHFlip:
 .ENDS
 
 BowserGfxDraw_NES:
+    LD L, <Enemy_Y_Position                 ;don't display enemy if it is below visible screen
+    LD A, (HL)                              ;to avoid sprite terminator
+    INC L
+    LD H, (HL)
+    LD L, A
+    LD DE, $01D0                                
+    OR A
+    SBC HL, DE
+    JP NC, SprObjectOffscrChk
+    LD HL, (ObjectOffset)
+;
     LD L, <Enemy_Y_Position                 ;get enemy object vertical position
     LD A, (HL)
     SUB A, SMS_PIXELYOFFSET
@@ -6303,6 +6326,7 @@ HandleEnemyFBallCol:
     ADD A, >Enemy_ID
     LD H, A
     LD L, <Enemy_ID
+    LD A, (HL)
     CP A, OBJECTID_Bowser
     JP Z, HurtBowser
     LD H, E
