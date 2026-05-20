@@ -1272,7 +1272,6 @@ L_WaterArea3:
     .db $45, $09
     .ENDIF
 
-    .db $4D, $65 ; floor @ Y07
     .db $5D, $65 ; floor @ Y07
     .db $5D, $67 ; ceiling tile @ Y05
     .db $6D, $65 ; floor @ Y07

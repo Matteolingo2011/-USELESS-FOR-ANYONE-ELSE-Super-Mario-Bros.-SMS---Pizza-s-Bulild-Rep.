@@ -370,6 +370,7 @@ RenderBit:
     JP NZ, +                        ;if not, skip
     LD IYL, $00                     ;disable castle ceiling/floor processing
     INC IXH                         ;set metatile to castle floor bottom
+    INC IXH
     JP NextTBit                     ;do next terrain bit
     ;
 +:

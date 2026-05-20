@@ -2366,6 +2366,7 @@ Palette0_MTiles:
     .dw $01CC, $01CD, $01CE, $01CF                                          ; ceiling right
     .dw $01C8, $01C9, $01CE, $01CF                                          ; ceiling single
     .dw $01B4, $01B5, $01B6, $01B7                                          ; floor top
+    .dw $11B4, $11B5, $11B6, $11B7                                          ; floor top (PRI)
     .dw $01C0, $01BF, $01BC, $01BD                                          ; floor bottom
 
     .dw $01B8, $01B9, $01B6, $01B7                                          ; floor left top corner
