@@ -1949,7 +1949,7 @@ WorldSelectMessage1:
     .db StripeCount($1A)
     .dw $01FC, $017C, $017F, $0179, $0000
     .dw $017E, $017C, $01F9, $01F9, $01F7, $01FE, $0000
-    .dw $0139
+    .dw $013A
     .db $00
 .ENDS
 
