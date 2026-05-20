@@ -28,22 +28,40 @@ DrawVine:
     LD A, (Enemy_Rel_YPos)
     ADD A, B
     SUB A, SMS_PIXELYOFFSET
+    CP A, $D0
+    JP Z, +
     LD (HL), A
++:
     INC L
     ADD A, $08
+    CP A, $D0
+    JP Z, +
     LD (HL), A
++:
     INC L
     ADD A, $08
+    CP A, $D0
+    JP Z, +
     LD (HL), A
++:
     INC L
     ADD A, $08
+    CP A, $D0
+    JP Z, +
     LD (HL), A
++:
     INC L
     ADD A, $08
+    CP A, $D0
+    JP Z, +
     LD (HL), A
++:
     INC L
     ADD A, $08
+    CP A, $D0
+    JP Z, +
     LD (HL), A
++:
     LD L, E
 ;
     SLA L
