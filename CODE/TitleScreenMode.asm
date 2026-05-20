@@ -90,7 +90,7 @@ GameMenuRoutine:
     DEC E                           ;was the B button pressed earlier?  if so, branch
     JP Z, @IncWorldSel              ;note this will not be run if world selection is disabled
     
-    .IF SMSPOWERCOMP != $00
+    .IF SINGLEPLAYERONLY != $00
     JP @NullJoypad                  ;don't allow user to select 2 Players
     .ENDIF
 

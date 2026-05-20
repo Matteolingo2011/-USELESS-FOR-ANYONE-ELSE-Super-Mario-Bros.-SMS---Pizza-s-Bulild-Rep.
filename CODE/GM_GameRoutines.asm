@@ -314,10 +314,6 @@ NextArea:
     LD (SndHurryUpFlag), A              ;reset hurry up flag for sound driver
     LD A, SNDID_SILENCE
     LD (MusicTrack0.SoundQueue), A      ; EVENT
-
-    .IF SMSPOWERCOMP != $00
-    JP BootVector                       ;reset game after 1st level
-    .ENDIF
     RET
 
 ;-------------------------------------------------------------------------------------

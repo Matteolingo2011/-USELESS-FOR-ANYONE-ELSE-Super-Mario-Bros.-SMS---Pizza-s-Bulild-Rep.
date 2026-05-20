@@ -2024,7 +2024,7 @@ TitleScreenData:
     .db StripeCount($1A)
     .dw BG_MACRO($0101), BLANKTILE, $08F7, $08F8, $08F9, $08FA, $08F4, $08FB, BLANKTILE, $08FC, $08F9, $08FD, $08F4
     
-    .IF SMSPOWERCOMP == $00
+    .IF SINGLEPLAYERONLY == $00
 ;   "2 PLAYER GAME"
     .dw swapBytes(xyToNameTbl_M(11, 17))
     .db StripeCount($1A)
@@ -2106,7 +2106,7 @@ TitleScreenData_NES:
     .db StripeCount($1A)
     .dw BG_MACRO($0101), BLANKTILE, $00E5, $00E6, $00E7, $00E8, $00EC, $00E9, BLANKTILE, $00EA, $00E7, $00EB, $00EC
     
-    .IF SMSPOWERCOMP == $00
+    .IF SINGLEPLAYERONLY == $00
 ;   "2 PLAYER GAME"
     .dw swapBytes(xyToNameTbl_M(11, 17))
     .db StripeCount($1A)
