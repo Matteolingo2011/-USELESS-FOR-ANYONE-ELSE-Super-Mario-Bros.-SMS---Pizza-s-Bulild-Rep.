@@ -3047,7 +3047,10 @@ ChgSDir:
     INC A                                       ;otherwise increment it
 SetSDir:
     LD (Enemy_MovingDir), A                     ;store movement direction here
-    JP InjurePlayer                             ;perform sub to hurt or kill player
+    PUSH DE                                     ;save SAT Address
+    CALL InjurePlayer                           ;perform sub to hurt or kill player
+    POP DE                                      ;restore SAT Address
+    RET
 
 ;--------------------------------
 
