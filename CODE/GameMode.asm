@@ -6309,7 +6309,8 @@ NoFToECol:
 .SECTION "BowserIdentities" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8 RETURNORG
 BowserIdentities:
     .db OBJECTID_Goomba, OBJECTID_GreenKoopa, OBJECTID_BuzzyBeetle
-    .db OBJECTID_Spiny, OBJECTID_Lakitu, OBJECTID_Bloober
+    ;.db OBJECTID_Spiny, OBJECTID_Lakitu, OBJECTID_Bloober
+    .db OBJECTID_Goomba, OBJECTID_GreenKoopa, OBJECTID_BuzzyBeetle
     .db OBJECTID_HammerBro, OBJECTID_Bowser
 .ENDS
 
@@ -6364,7 +6365,7 @@ HurtBowser:
     LD (HL), A
 ;
     LD A, (WorldNumber)
-    CP A, $03
+    CP A, $06;$03
     LD A, $20
     JP NC, SetDBSte
     OR A, $03
