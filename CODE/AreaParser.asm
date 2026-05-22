@@ -1998,9 +1998,9 @@ SetupCannon:
     LD (HL), A                          ;and store it here
     INC H
     LD A, H
-    CP A, $C7                           ;increment and check offset
+    CP A, >Cannon_Y_Position + $06      ;increment and check offset
     JP C, StrCOffset                    ;if not yet reached sixth cannon, branch to save offset
-    LD A, $C1                           ;otherwise initialize it
+    LD A, >Cannon_Y_Position            ;otherwise initialize it
 StrCOffset:
     SUB A, >Cannon_Y_Position
     LD (Cannon_Offset), A               ;save new offset and leave
@@ -2132,7 +2132,7 @@ Hole_Empty:
     JP NZ, NoWhirlP                     ;if not water type, skip this part
 ;
     LD A, (Whirlpool_Offset)            ;get offset for data used by cannons and whirlpools
-    ADD A, $C0                          ;(SMS) set high byte of RAM address (index)
+    ADD A, >Whirlpool_LeftExtent        ;(SMS) set high byte of RAM address (index)
     LD H, A
 ;
     CALL GetAreaObjXPosition            ;get proper vertical coordinate of where we're at
@@ -2154,11 +2154,11 @@ Hole_Empty:
     LD (HL), A                          ;save size of whirlpool here
     INC H                               
     LD A, H
-    CP A, $C5                           ;increment and check offset
+    CP A, >Whirlpool_Length + $05       ;increment and check offset
     JP C, StrWOffset                    ;if not yet reached fifth whirlpool, branch
-    LD A, $C0                           ;otherwise initialize it
+    LD A, >Whirlpool_Length             ;otherwise initialize it
 StrWOffset:
-    SUB A, $C0
+    SUB A, >Whirlpool_Length
     LD (Whirlpool_Offset), A            ;save new offset here
 NoWhirlP:
     LD A, (AreaType)                    ;get appropriate metatile, then
@@ -2166,6 +2166,7 @@ NoWhirlP:
     addAToHL8_M
     LD A, (HL)                          ;render the hole proper
     LD BC, $080F                        ;start at ninth row and go to bottom, run RenderUnderPart
+    ; FALL THROUGH
 
 ;--------------------------------
 
