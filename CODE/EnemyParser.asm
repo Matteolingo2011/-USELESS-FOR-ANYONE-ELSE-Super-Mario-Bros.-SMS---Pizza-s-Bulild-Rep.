@@ -505,7 +505,8 @@ GetCent:
     ADD A, (HL)
     LD L, <RedPTroopaCenterYPos     ;store as central vertical coordinate
     LD (HL), A
-;
+    ; FALL THROUGH
+
 TallBBox:
     LD A, $03                       ;set specific bounding box size control
 SetBBox:
@@ -514,7 +515,8 @@ SetBBox:
 ;
     LD L, <Enemy_MovingDir          ;set moving direction for left
     LD (HL), $02
-;
+    ; FALL THROUGH
+
 InitVStf:
     XOR A
     LD L, <Enemy_Y_Speed            ;initialize vertical speed
