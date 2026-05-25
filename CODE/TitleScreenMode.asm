@@ -47,6 +47,11 @@ WSelectBufferTemplate:
 .ENDS
 
 GameMenuRoutine:
+    .IF WORLDSELECT != $00
+    LD A, WORLDSELECT
+    LD (WorldNumber), A
+    .ENDIF
+
     LD E, $00
     LD A, (SavedJoypad1Bits)        ;check to see if either player pressed
     LD HL, SavedJoypad2Bits         ;only the start button (either joypad) [Button 1 for SMS]

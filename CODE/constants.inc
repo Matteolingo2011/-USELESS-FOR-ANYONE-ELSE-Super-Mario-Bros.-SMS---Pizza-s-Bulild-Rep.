@@ -4,6 +4,7 @@
 .DEFINE SHORTTIMER              $00
 .DEFINE NOINVALIDINPUTS         $01
 .DEFINE PALBUILD                $00
+.DEFINE WORLDSELECT             $00
 
 ;-------------------------------------------------------------------------------------
 ;   SMS CONSTANTS
