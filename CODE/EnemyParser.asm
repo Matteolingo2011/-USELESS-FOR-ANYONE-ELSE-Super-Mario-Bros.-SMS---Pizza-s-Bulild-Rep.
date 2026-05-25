@@ -236,7 +236,7 @@ CheckpointEnemyID:
     CP A, $15                       ;check enemy object identifier for $15 or greater
     JP NC, InitEnemyRoutines        ;and branch straight to the jump engine if found
 ;
-    EX AF, AF' ;LD C, A                         ;save identifier in Y register for now
+    EX AF, AF'                      ;save identifier in Y register for now
 ;
     LD L, <Enemy_Y_Position
     LD A, (HL)
@@ -246,7 +246,7 @@ CheckpointEnemyID:
     LD L, <EnemyOffscrBitsMasked    ;set offscreen masked bit
     LD (HL), $01
 ;
-    EX AF, AF' ;LD A, C                         ;get identifier back and use as offset for jump engine
+    EX AF, AF'                      ;get identifier back and use as offset for jump engine
 
 InitEnemyRoutines:
     PUSH HL                         ;(SMS) save ObjectOffset
@@ -1080,121 +1080,122 @@ FlameYPosData:
     .db $90, $80, $70, $90
 .ENDS
 
+; FlameYMFAdderData:
+;     .db $ff, $01
+
 InitBowserFlame:
     POP HL
 ;
-    LD A, (FrenzyEnemyTimer)
+    LD A, (FrenzyEnemyTimer)            ;if timer not expired yet, branch to leave
     OR A
     RET NZ
 ;
-    LD L, <Enemy_Y_MoveForce
+    LD L, <Enemy_Y_MoveForce            ;reset something here
     LD (HL), A
 ;
-    LD A, SNDID_FLAME
+    LD A, SNDID_FLAME                   ;load bowser's flame sound into queue
     LD (SFXTrack2.SoundQueue), A
 ;
-    LD DE, (BowserFront_Offset - 1)
-    LD E, <Enemy_ID
+    LD DE, (BowserFront_Offset - 1)     ;get bowser's buffer offset
+    LD E, <Enemy_ID                     ;check for bowser
     LD A, (DE)
     CP A, OBJECTID_Bowser
-    JP Z, SpawnFromMouth
+    JP Z, SpawnFromMouth                ;branch if found
 ;
-    CALL SetFlameTimer
-    ADD A, $20
+    CALL SetFlameTimer                  ;get timer data based on flame counter
+    ADD A, $20                          ;add 32 frames by default
     LD C, A
-    LD A, (SecondaryHardMode)
+    LD A, (SecondaryHardMode)           ;if secondary mode flag not set, use as timer setting
     OR A
+    LD A, C
     JP Z, SetFrT
-    LD A, C
-    SUB A, $10
-    LD C, A
+    SUB A, $10                          ;otherwise subtract 16 frames for secondary hard mode       
 SetFrT:
-    LD A, C
-    LD (FrenzyEnemyTimer), A
+    LD (FrenzyEnemyTimer), A            ;set timer accordingly
 ;
     LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
     LD A, (BC)
-    AND A, %00000011
-    LD L, <BowserFlamePRandomOfs
+    AND A, %00000011                    ;get 2 LSB from first part of LSFR
+    LD L, <BowserFlamePRandomOfs        ;set here
     LD (HL), A
-    LD BC, FlameYPosData
+    LD BC, FlameYPosData                ;use as offset
     addAToBC8_M
-    LD A, (BC)
+    LD A, (BC)                          ;load vertical position based on pseudorandom offset
     ; FALL THROUGH
 
 PutAtRightExtent:
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position             ;set vertical position
     LD (HL), A
 ;
-    LD A, (ScreenRight_X_Pos)
+    LD A, (ScreenRight_X_Pos)           ;place enemy 32 pixels beyond right side of screen
     ADD A, $20
     LD L, <Enemy_X_Position
     LD (HL), A
 ;
-    LD A, (ScreenRight_PageLoc)
+    LD A, (ScreenRight_PageLoc)         ;add carry
     ADC A, $00
     LD L, <Enemy_PageLoc
     LD (HL), A
 ;
-    JP FinishFlame
+    JP FinishFlame                      ;skip this part to finish setting values
 
 SpawnFromMouth:
-    LD E, <Enemy_X_Position
+    LD E, <Enemy_X_Position             ;get bowser's horizontal position
     LD L, E
     LD A, (DE)
-    SUB A, $0E
-    LD (HL), A
+    SUB A, $0E                          ;subtract 14 pixels
+    LD (HL), A                          ;save as flame's horizontal position
 ;
-    LD E, <Enemy_PageLoc
+    LD E, <Enemy_PageLoc                ;copy page location from bowser to flame
     LD L, E
     LD A, (DE)
     LD (HL), A
 ;
-    LD E, <Enemy_Y_Position
+    LD E, <Enemy_Y_Position             ;add 8 pixels to bowser's vertical position
     LD L, E
     LD A, (DE)
     ADD A, $08
-    LD (HL), A
+    LD (HL), A                          ;save as flame's vertical position
 ;
     LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
     LD A, (BC)
-    AND A, %00000011
-    LD L, <Enemy_YMF_Dummy
+    AND A, %00000011                    ;get 2 LSB from first part of LSFR
+    LD L, <Enemy_YMF_Dummy              ;save here
     LD (HL), A
 ;
-    LD BC, FlameYPosData
-    addAToBC8_M
+    LD BC, FlameYPosData                ;use as offset
+    addAToBC8_M                         ;get value here using bits as offset
     LD A, (BC)
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position             ;compare value to flame's current vertical position
     CP A, (HL)
-    LD A, $FF
-    JP C, SetMF
-    LD A, $01
+    LD A, $FF                           ;load default offset
+    JP C, SetMF                         ;if less, do not increment offset
+    LD A, $01                           ;otherwise use 2nd value
 SetMF:
-    LD L, <Enemy_Y_MoveForce
+    LD L, <Enemy_Y_MoveForce            ;save to vertical movement force
     LD (HL), A
-    XOR A
+    XOR A                               ;clear enemy frenzy buffer
     LD (EnemyFrenzyBuffer), A
     ; FALL THROUGH
 
 FinishFlame:
-    LD L, <Enemy_BoundBoxCtrl
+    LD L, <Enemy_BoundBoxCtrl           ;set $08 for bounding box control
     LD (HL), $08
 ;
-    LD A, $01
-    LD L, <Enemy_Y_HighPos
+    LD A, $01                           ;set high byte of vertical and
+    LD L, <Enemy_Y_HighPos              ;enemy buffer flag
     LD (HL), A
     LD L, <Enemy_Flag
     LD (HL), A
 ;
-    XOR A
-    LD L, <Enemy_X_MoveForce
+    XOR A                               ;initialize horizontal movement force, and
+    LD L, <Enemy_X_MoveForce            ;enemy state
     LD (HL), A
     LD L, <Enemy_State
     LD (HL), A
@@ -1213,70 +1214,68 @@ FireworksYPosData:
 InitFireworks:
     POP HL
 ;
-    LD A, (FrenzyEnemyTimer)
+    LD A, (FrenzyEnemyTimer)            ;if timer not expired yet, branch to leave
     OR A
     RET NZ
 ;
-    LD A, $20
+    LD A, $20                           ;otherwise reset timer
     LD (FrenzyEnemyTimer), A
 ;
-    LD A, (FireworksCounter)
+    LD A, (FireworksCounter)            ;decrement for each explosion
     DEC A
     LD (FireworksCounter), A
 ;
-    LD DE, Enemy_ID + $06 * $100
+    LD DE, Enemy_ID + $06 * $100        ;start at last slot
 StarFChk:
     DEC D
-    LD A, (DE)
-    CP A, OBJECTID_StarFlagObject
-    JP NZ, StarFChk
+    LD A, (DE)                          ;check for presence of star flag object
+    CP A, OBJECTID_StarFlagObject       ;if there isn't a star flag object,
+    JP NZ, StarFChk                     ;routine goes into infinite loop = crash
 ;
-    LD E, <Enemy_X_Position
-    LD A, (DE)
-    SUB A, $30
-    PUSH AF
+    LD E, <Enemy_X_Position             ;get horizontal coordinate of star flag object, then
+    LD A, (DE)                          ;subtract 48 pixels from it and save to
+    SUB A, $30                          ;to B (was the stack)
+    LD B, A
 ;
-    LD E, <Enemy_PageLoc
-    LD A, (DE)
+    LD E, <Enemy_PageLoc                ;subtract the carry from the page location
+    LD A, (DE)                          ;of the star flag object
     SBC A, $00
-    LD (Temp_Bytes + $00), A
+    LD C, A
 ;
-    LD A, (FireworksCounter)
-    LD C, A
-    LD E, <Enemy_State
+    LD A, (FireworksCounter)            ;get fireworks counter
+    LD L, A
+    LD E, <Enemy_State                  ;add state of star flag object (possibly not necessary)
     LD A, (DE)
-    ADD A, C
-    LD DE, FireworksXPosData
+    ADD A, L
+    LD DE, FireworksXPosData            ;use as offset
     addAToDE8_M
-    POP AF
-    LD C, A
-    LD A, (DE)
-    ADD A, C
-    LD L, <Enemy_X_Position
+    LD A, (DE)                          ;add number based on offset of fireworks counter
+    ADD A, B                            ;to saved horizontal coordinate of star flag - 48 pixels            
+    LD L, <Enemy_X_Position             ;store as the fireworks object horizontal coordinate
     LD (HL), A
 ;
-    LD A, (Temp_Bytes + $00)
-    ADC A, $00
+    LD A, C                             ;add carry and store as page location for
+    ADC A, $00                          ;the fireworks object
     LD L, <Enemy_PageLoc
     LD (HL), A
 ;
-    LD A, $06
+    LD A, $06                           ;get vertical position using same offset
     addAToDE8_M
     LD A, (DE)
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position             ;and store as vertical coordinate for fireworks object
     LD (HL), A
 ;
-    LD A, $01
-    LD L, <Enemy_Y_HighPos
+    LD A, $01                           ;store in vertical high byte
+    LD L, <Enemy_Y_HighPos              ;and activate enemy buffer flag
     LD (HL), A
     LD L, <Enemy_Flag
     LD (HL), A
 ;
-    XOR A
+    XOR A                               ;initialize explosion counter
     LD L, <ExplosionGfxCounter
     LD (HL), A
 ;
-    LD L, <ExplosionTimerCounter
+    LD L, <ExplosionTimerCounter        ;set explosion timing counter
     LD (HL), $08
     RET
 
@@ -1300,108 +1299,108 @@ SwimCC_IDData:
 BulletBillCheepCheep:
     POP HL
 ;
-    LD A, (FrenzyEnemyTimer)
+    LD A, (FrenzyEnemyTimer)            ;if timer not expired yet, branch to leave
     OR A
     RET NZ
 ;
-    LD A, (AreaType)
+    LD A, (AreaType)                    ;are we in a water-type level?
     OR A
-    JP NZ, DoBulletBills
+    JP NZ, DoBulletBills                ;if not, branch elsewhere
 ;
-    LD A, H
+    LD A, H                             ;are we past third enemy slot?
     CP A, $C4
-    RET NC
+    RET NC                              ;if so, branch to leave
 ;
     LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
     LD A, (BC)
-    LD C, $00
-    CP A, $AA
-    JP C, ChkW2
-    INC C
+    LD C, $00                           ;load default offset
+    CP A, $AA                           ;check first part of LSFR against preset value
+    JP C, ChkW2                         ;if less than preset, do not increment offset
+    INC C                               ;otherwise increment
 ChkW2:
-    LD A, (WorldNumber)
+    LD A, (WorldNumber)                 ;check world number
     CP A, WORLD2
-    JP Z, Get17ID
-    INC C
+    JP Z, Get17ID                       ;if we're on world 2, do not increment offset
+    INC C                               ;otherwise increment
 Get17ID:
     LD A, C
-    AND A, %00000001
-    LD BC, SwimCC_IDData
+    AND A, %00000001                    ;mask out all but last bit of offset
+    LD BC, SwimCC_IDData                ;load identifier for cheep-cheeps
     addAToBC8_M
     LD A, (BC)
 Set17ID:
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                     ;store whatever's in A as enemy identifier
     LD (HL), A
 ;
-    LD A, (BitMFilter)
+    LD A, (BitMFilter)                  ;if not all bits set, skip init part and compare bits
     INC A
     JP NZ, GetRBit
-    LD (BitMFilter), A
+    LD (BitMFilter), A                  ;initialize vertical position filter
 ;
 GetRBit:
     LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
-    LD A, (BC)
-    AND A, %00000111
-    LD E, A
-    LD BC, Bitmasks
+    LD A, (BC)                          ;get first part of LSFR
+    AND A, %00000111                    ;mask out all but 3 LSB
+    LD E, A                             ;store in E
+    LD BC, Bitmasks                     ;also use as offset
     addAToBC8_M
-    LD A, (BC)
+    LD A, (BC)                          ;load bitmask
     LD C, A
 ChkRBit:
-    LD A, (BitMFilter)
+    LD A, (BitMFilter)                  ;perform AND on filter
     AND A, C
     JP Z, AddFBit
-    RLC C
-    INC E
-    LD A, E
+    RLC C                               ;shift bitmask
+    INC E                               ;increment offset
+    LD A, E                             ;mask out all but 3 LSB thus keeping it 0-7
     AND A, %00000111
     LD E, A
-    JP ChkRBit
+    JP ChkRBit                          ;do another check
 AddFBit:
-    LD A, (BitMFilter)
+    LD A, (BitMFilter)                  ;add bit to already set bits in filter
     OR A, C
     LD (BitMFilter), A
 ;
-    LD A, E
+    LD A, E                             ;load vertical position using offset
     LD BC, Enemy17YPosData
     addAToBC8_M
     LD A, (BC)
-    CALL PutAtRightExtent
+    CALL PutAtRightExtent               ;set vertical position and other values
 ;
-    LD L, <Enemy_YMF_Dummy
+    LD L, <Enemy_YMF_Dummy              ;initialize dummy variable
     LD (HL), A
-    LD A, $20
+    LD A, $20                           ;set timer
     LD (FrenzyEnemyTimer), A
 ;
-    JP CheckpointEnemyID
+    JP CheckpointEnemyID                ;process our new enemy object
 
 DoBulletBills:
-    LD D, $C0
+    LD D, $C0                           ;start at beginning of enemy slots
 BB_SLoop:
-    INC D
+    INC D                               ;move onto the next slot
     LD A, D
-    CP A, $C6
+    CP A, $C6                           ;branch to play sound if we've done all slots
     JP NC, FireBulletBill
-    LD E, <Enemy_Flag
+    LD E, <Enemy_Flag                   ;if enemy buffer flag not set,
     LD A, (DE)
     OR A
-    JP Z, BB_SLoop
-    LD E, <Enemy_ID
+    JP Z, BB_SLoop                      ;loop back and check another slot
+    LD E, <Enemy_ID                     ;check enemy identifier for
     LD A, (DE)
-    CP A, OBJECTID_BulletBill_FrenzyVar
+    CP A, OBJECTID_BulletBill_FrenzyVar ;bullet bill object (frenzy variant)
     JP NZ, BB_SLoop
-    RET
+    RET                                 ;if found, leave
 
 FireBulletBill:
-    LD A, SNDID_CANNON
+    LD A, SNDID_CANNON                  ;play fireworks/gunfire sound
     LD (SFXTrack1.SoundQueue), A
-    LD A, OBJECTID_BulletBill_FrenzyVar
+    LD A, OBJECTID_BulletBill_FrenzyVar ;load identifier for bullet bill object
     JP Set17ID
 
 ;--------------------------------
@@ -1409,178 +1408,101 @@ FireBulletBill:
 ;$01(IXL) - used to store enemy ID
 ;$02(D) - used to store page location of right side of screen
 ;$03(E) - used to store X position of right side of screen
+;B - counter for amount of enemies in group
 
-; HandleGroupEnemies:
-;     LD C, $00
-;     SUB A, $37
-;     PUSH AF
-;     CP A, $04
-;     JP NC, SnglID
-; ;
-;     PUSH AF
-;     LD C, OBJECTID_Goomba
-;     LD A, (PrimaryHardMode)
-;     OR A
-;     JP Z, PullID
-;     LD C, OBJECTID_BuzzyBeetle
-; PullID:
-;     POP AF
-; SnglID:
-;     LD IXL, C
-;     AND A, $02
-;     LD A, $B0
-;     JP Z, SetYGp
-;     LD A, $70
-; SetYGp:
-;     LD B, A ;LD (Temp_Bytes + $00), A
-;     LD A, (ScreenRight_PageLoc)
-;     LD D, A ;LD (Temp_Bytes + $02), A
-;     LD A, (ScreenRight_X_Pos)
-;     LD E, A ;LD (Temp_Bytes + $03), A
-;     LD C, $02
-;     POP AF
-;     SRL A
-;     JP NC, CntGrp
-;     INC C
-; CntGrp:
-;     LD A, C
-;     LD (NumberofGroupEnemies), A
-; GrLoop:
-;     LD H, $C0
-; GSltLp:
-;     INC H
-;     LD A, H
-;     CP A, $C6
-;     JP NC, Inc2B
-;     LD L, <Enemy_Flag
-;     LD A, (HL)
-;     OR A
-;     JP NZ, GSltLp
-; ;
-;     LD A, IXL
-;     LD L, <Enemy_ID
-;     LD (HL), A
-;     ;LD A, (Temp_Bytes + $02)
-;     LD L, <Enemy_PageLoc
-;     LD (HL), D ;LD (HL), A
-;     LD A, E ;LD A, (Temp_Bytes + $03)
-;     LD L, <Enemy_X_Position
-;     LD (HL), A
-;     ADD A, $18
-;     LD E, A ;LD (Temp_Bytes + $03), A
-;     LD A, D ;LD A, (Temp_Bytes + $02)
-;     ADC A, $00
-;     LD D, A ;LD (Temp_Bytes + $02), A
-;     ;LD A, (Temp_Bytes + $00)
-;     LD L, <Enemy_Y_Position
-;     LD (HL), B ;LD (HL), A
-;     LD A, $01
-;     LD L, <Enemy_Y_HighPos
-;     LD (HL), A
-;     LD L, <Enemy_Flag
-;     LD (HL), A
-; ;
-;     CALL CheckpointEnemyID
-; ;
-;     LD A, (NumberofGroupEnemies)
-;     DEC A
-;     LD (NumberofGroupEnemies), A
-;     JP NZ, GrLoop
-; ;
-;     JP Inc2B
-
+;   CheckpointEnemyID should not touch BC, DE for this to work
+;   Goomba, GreenKoopa, and Bettle don't touch, so it works
 HandleGroupEnemies:
-    LD IXL, $00
-    SUB A, $37
-    PUSH AF
-    CP A, $04
-    JP NC, SnglID
+    LD IXL, $00                         ;load value for green koopa troopa
+    SUB A, $37                          ;subtract $37 from second byte read
+    PUSH AF                             ;save result in stack for now
+    CP A, $04                           ;was byte in $3b-$3e range?
+    JP NC, SnglID                       ;if so, branch
 ;
-    PUSH AF
-    LD IXL, OBJECTID_Goomba
-    LD A, (PrimaryHardMode)
+    PUSH AF                             ;save another copy to stack
+    LD IXL, OBJECTID_Goomba             ;load value for goomba enemy
+    LD A, (PrimaryHardMode)             ;if primary hard mode flag not set,
     OR A
-    JP Z, PullID
-    LD IXL, OBJECTID_BuzzyBeetle
+    JP Z, PullID                        ;branch, otherwise change to value
+    LD IXL, OBJECTID_BuzzyBeetle        ;for buzzy beetle
 PullID:
-    POP AF
+    POP AF                              ;get second copy from stack
 SnglID:
-    AND A, $02
-    LD A, $B0
-    JP Z, SetYGp
-    LD A, $70
+    AND A, $02                          ;check to see if d1 was set
+    LD C, $B0                           ;load default y coordinate
+    JP Z, SetYGp                        ;if not, branch and use default
+    LD C, $70                           ;otherwise move y coordinate up
 SetYGp:
-    LD C, A
-    LD A, (ScreenRight_PageLoc)
-    LD D, A
-    LD A, (ScreenRight_X_Pos)
-    LD E, A
-    LD B, $02
-    POP AF
-    SRL A
-    JP NC, CntGrp
-    INC B
+    LD A, (ScreenRight_PageLoc)         ;get page number of right edge of screen
+    LD D, A                             ;save here
+    LD A, (ScreenRight_X_Pos)           ;get pixel coordinate of right edge
+    LD E, A                             ;save here
+    LD B, $02                           ;load two enemies by default
+    POP AF                              ;get first copy from stack
+    SRL A                               ;check to see if d0 was set
+    JP NC, CntGrp                       ;if not, use default value
+    INC B                               ;otherwise increment to three enemies
 CntGrp:
 GrLoop:
-    LD H, $C0
+    LD H, $C0                           ;start at beginning of enemy buffers
 GSltLp:
-    INC H
-    LD A, H
+    INC H                               ;increment and branch if past
+    LD A, H                             ;end of buffers
     CP A, $C6
     JP NC, Inc2B
-    LD L, <Enemy_Flag
+    LD L, <Enemy_Flag                   ;check to see if enemy is already
     LD A, (HL)
     OR A
-    JR NZ, GSltLp
+    JR NZ, GSltLp                       ;stored in buffer, and branch if so
 ;
     LD A, IXL
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                     ;store enemy object identifier
     LD (HL), A
-    LD L, <Enemy_PageLoc
+    LD L, <Enemy_PageLoc                ;store page location for enemy object
     LD (HL), D
     LD A, E
-    LD L, <Enemy_X_Position
+    LD L, <Enemy_X_Position             ;store x coordinate for enemy object
     LD (HL), A
-    ADD A, $18
+    ADD A, $18                          ;add 24 pixels for next enemy
     LD E, A
-    LD A, D
-    ADC A, $00
+    LD A, D                             ;add carry to page location for
+    ADC A, $00                          ;next enemy
     LD D, A
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position             ;store y coordinate for enemy object
     LD (HL), C
-    LD A, $01
-    LD L, <Enemy_Y_HighPos
+    LD A, $01                           ;activate flag for buffer, and
+    LD L, <Enemy_Y_HighPos              ;put enemy within the screen vertically
     LD (HL), A
     LD L, <Enemy_Flag
     LD (HL), A
-    CALL CheckpointEnemyID              ; BC ISN'T TOUCHED FOR GOOMBA, GREEN KOOPA, OR BETTLE
-    DJNZ GrLoop
+    CALL CheckpointEnemyID              ;process each enemy object separately
+    DJNZ GrLoop                         ;do this until we run out of enemy objects
 ;
-    JP Inc2B
+    JP Inc2B                            ;jump to increment data offset and leave
 
 ;--------------------------------
 
 InitPiranhaPlant:
     POP HL
 InitPiranhaPlant_NOPOP:
-    LD L, <PiranhaPlant_Y_Speed
+    LD L, <PiranhaPlant_Y_Speed         ;set initial speed
     LD (HL), $01
 ;
-    XOR A
-    LD L, <Enemy_State
+    XOR A                               ;initialize enemy state and what would normally
+    LD L, <Enemy_State                  ;be used as vertical speed, but not in this case
     LD (HL), A
     LD L, <PiranhaPlant_MoveFlag
     LD (HL), A
 ;
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position             ;save original vertical coordinate here
     LD A, (HL)
     LD L, <PiranhaPlantDownYPos
     LD (HL), A
     SUB A, $18
-    LD L, <PiranhaPlantUpYPos
+    LD L, <PiranhaPlantUpYPos           ;save original vertical coordinate - 24 pixels here
     LD (HL), A
 ;
-    LD A, $09
+    LD A, $09                           ;set specific value for bounding box control
     JP SetBBox2
 
 
@@ -1589,10 +1511,10 @@ InitPiranhaPlant_NOPOP:
 InitEnemyFrenzy:
     POP HL
     PUSH HL
-    LD L, <Enemy_ID
-    LD A, (HL)
+    LD L, <Enemy_ID                     ;load enemy identifier
+    LD A, (HL)                          ;save in enemy frenzy buffer
     LD (EnemyFrenzyBuffer), A
-    SUB A, $12
+    SUB A, $12                          ;subtract 12 and use as offset for jump engine
     RST JumpEngine
 
 ;   frenzy object jump table
@@ -1614,22 +1536,22 @@ NoFrenzyCode:
 EndFrenzy:
     POP HL
 ;
-    LD D, $C6
+    LD D, $C6                           ;start at last slot
     LD B, $06
 LakituChk:
-    LD E, <Enemy_ID
+    LD E, <Enemy_ID                     ;check enemy identifiers
     LD A, (DE)
-    CP A, OBJECTID_Lakitu
+    CP A, OBJECTID_Lakitu               ;for lakitu
     JP NZ, NextFSlot
-    LD E, <Enemy_State
+    LD E, <Enemy_State                  ;if found, set state
     LD A, $01
     LD (DE), A
 NextFSlot:
-    DEC D
-    DJNZ LakituChk
+    DEC D                               ;move onto the next slot
+    DJNZ LakituChk                      ;do this until all slots are checked
 ;
-    XOR A
-    LD (EnemyFrenzyBuffer), A
+    XOR A                               ;empty enemy frenzy buffer
+    LD (EnemyFrenzyBuffer), A           ;disable enemy buffer flag for this object
     LD L, <Enemy_Flag
     LD (HL), A
     RET
@@ -1639,20 +1561,20 @@ NextFSlot:
 InitJumpGPTroopa:
     POP HL
 ;
-    LD L, <Enemy_MovingDir
+    LD L, <Enemy_MovingDir                  ;set for movement to the left
     LD (HL), $02
     LD L, <Enemy_X_Speed
 
     .IF PALBUILD == $00
-    LD (HL), $F8
+    LD (HL), $F8                            ;set horizontal speed
     .ELSE
-    LD (HL), $F6                    ;PAL diff: Faster horizontal speed to compensate FPS difference
+    LD (HL), $F6                            ;PAL diff: Faster horizontal speed to compensate FPS difference
     .ENDIF
 
 TallBBox2:
-    LD A, $03
+    LD A, $03                               ;set specific value for bounding box control
 SetBBox2:
-    LD L, <Enemy_BoundBoxCtrl
+    LD L, <Enemy_BoundBoxCtrl               ;set bounding box control then leave
     LD (HL), A
     RET
 
@@ -1661,30 +1583,31 @@ SetBBox2:
 InitBalPlatform:
     POP HL
 ;
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position                 ;raise vertical position by two pixels
     DEC (HL)
     DEC (HL)
 ;
-    LD A, (SecondaryHardMode)
+    LD A, (SecondaryHardMode)               ;if secondary hard mode flag not set,
     OR A
-    JP NZ, AlignP
-    LD A, $02
-    CALL PosPlatform
+    JP NZ, AlignP                           ;branch ahead
+    LD BC, $FFF8                            ;otherwise set value here
+    CALL PosPlatform                        ;do a sub to add or subtract pixels
 AlignP:
-    LD A, (BalPlatformAlignment)
-    LD L, <Enemy_State
+    LD A, (BalPlatformAlignment)            ;get current balance platform alignment
+    LD L, <Enemy_State                      ;set platform alignment to object state here
     LD (HL), A
     OR A
-    LD A, $FF
-    JP P, SetBPA
-    LD A, H
-    SUB A, $C1
+    LD A, $FF                               ;set default value here for now
+    JP P, SetBPA                            ;if old alignment $ff, put $ff as alignment for negative
+    LD A, H                                 ;if old contents already $ff, put
+    SUB A, $C1                              ;object offset as alignment to make next positive
 SetBPA:
-    LD (BalPlatformAlignment), A
+    LD (BalPlatformAlignment), A            ;store value here
     XOR A
-    LD L, <Enemy_MovingDir
+    LD L, <Enemy_MovingDir                  ;init moving direction
     LD (HL), A
-    CALL PosPlatform
+    LD BC, $0008
+    CALL PosPlatform                        ;do a sub to add 8 pixels, then run shared code here
     ; FALL THROUGH
     JP InitDropPlatform_NOPOP
 
@@ -1694,59 +1617,59 @@ InitDropPlatform:
     POP HL
 ;
 InitDropPlatform_NOPOP:
-    LD L, <PlatformCollisionFlag
+    LD L, <PlatformCollisionFlag            ;set some value here
     LD (HL), $FF
 ;
-    JP CommonPlatCode
+    JP CommonPlatCode                       ;then jump ahead to execute more code
 
 ;--------------------------------
 
 InitHoriPlatform:
     POP HL
 ;
-    LD L, <XMoveSecondaryCounter
+    LD L, <XMoveSecondaryCounter            ;init one of the moving counters
     LD (HL), $00
 ;
-    JP CommonPlatCode
+    JP CommonPlatCode                       ;jump ahead to execute more code
 
 ;--------------------------------
 
 InitVertPlatform:
     POP HL
 ;
-    LD C, $40
-    LD L, <Enemy_Y_Position
+    LD C, $40                               ;set default value here
+    LD L, <Enemy_Y_Position                 ;check vertical position
     LD A, (HL)
     OR A
-    JP P, SetYO
-    NEG
-    LD C, $C0
+    JP P, SetYO                             ;if above a certain point, skip this part
+    NEG                                     ;otherwise get two's compliment
+    LD C, $C0                               ;get alternate value to add to vertical position
 SetYO:
-    LD L, <YPlatformTopYPos
+    LD L, <YPlatformTopYPos                 ;save as top vertical position
     LD (HL), A
-    LD L, <Enemy_Y_Position
-    LD A, C
+    LD L, <Enemy_Y_Position                 ;load value from earlier, add number of pixels
+    LD A, C                                 ;to vertical position
     ADD A, (HL)
-    LD L, <YPlatformCenterYPos
+    LD L, <YPlatformCenterYPos              ;save result as central vertical position
     LD (HL), A
     ; FALL THROUGH
 
 ;--------------------------------
 
 CommonPlatCode:
-    CALL InitVStf
+    CALL InitVStf                           ;do a sub to init certain other values
 SPBBox:
     LD A, (AreaType)
-    CP A, $03
-    LD A, $05
-    JP Z, CasPBB
-    LD A, (SecondaryHardMode)
+    CP A, $03                               ;check for castle-type level
+    LD A, $05                               ;set default bounding box size control
+    JP Z, CasPBB                            ;use default value if found
+    LD A, (SecondaryHardMode)               ;otherwise check for secondary hard mode flag
     OR A
     LD A, $05
-    JP NZ, CasPBB
-    LD A, $06
+    JP NZ, CasPBB                           ;if set, use default value
+    LD A, $06                               ;use alternate value if not castle or secondary not set
 CasPBB:
-    LD L, <Enemy_BoundBoxCtrl
+    LD L, <Enemy_BoundBoxCtrl               ;set bounding box size control here and leave
     LD (HL), A
     RET
 
@@ -1755,70 +1678,66 @@ CasPBB:
 LargeLiftUp:
     POP HL
 ;
-    CALL PlatLiftUp_NOPOP
-    JP SPBBox
+    CALL PlatLiftUp_NOPOP                   ;execute code for platforms going up
+    JP SPBBox                               ;overwrite bounding box for large platforms
 
 LargeLiftDown:
     POP HL
 ;
-    CALL PlatLiftDown_NOPOP
-    JP SPBBox
+    CALL PlatLiftDown_NOPOP                 ;execute code for platforms going down
+    JP SPBBox                               ;jump to overwrite bounding box size control
 
 ;--------------------------------
 
 PlatLiftUp:
     POP HL
 PlatLiftUp_NOPOP:
-    LD L, <Enemy_Y_MoveForce
+    LD L, <Enemy_Y_MoveForce                ;set movement amount here
     LD (HL), $10
-    LD L, <Enemy_Y_Speed
+    LD L, <Enemy_Y_Speed                    ;set moving speed for platforms going up
     LD (HL), $FF
-    JP CommonSmallLift
+    JP CommonSmallLift                      ;skip ahead to part we should be executing
 
 ;--------------------------------
 
 PlatLiftDown:
     POP HL
 PlatLiftDown_NOPOP:
-    LD L, <Enemy_Y_MoveForce
+    LD L, <Enemy_Y_MoveForce                ;set movement amount here
     LD (HL), $F0
-    LD L, <Enemy_Y_Speed
+    LD L, <Enemy_Y_Speed                    ;set moving speed for platforms going down
     LD (HL), $00
 
 ;--------------------------------
 
 CommonSmallLift:
-    LD A, $01
-    CALL PosPlatform
-    LD L, <Enemy_BoundBoxCtrl
+    LD BC, $000C
+    CALL PosPlatform                        ;do a sub to add 12 pixels due to preset value
+    LD L, <Enemy_BoundBoxCtrl               ;set bounding box control for small platforms
     LD (HL), $04
     RET
 
 ;--------------------------------
-.SECTION "PlatPosDataLow/PlatPosDataHigh" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8 RETURNORG
-PlatPosDataLow:
-    .db $08,$0c,$f8
+; PlatPosDataLow:
+;     .db $08,$0c,$f8
 
-PlatPosDataHigh:
-    .db $00,$00,$ff
-.ENDS
+; PlatPosDataHigh:
+;     .db $00,$00,$ff
+
+; $0008 : $00
+; $000C : $01
+; $FFF8 : $02
 
 PosPlatform:
-    LD BC, PlatPosDataLow
-    addAToBC8_M
+    LD A, C
+    LD L, <Enemy_X_Position                 ;get horizontal coordinate
+    ADD A, (HL)                             ;add or subtract pixels depending on offset
+    LD (HL), A                              ;store as new horizontal coordinate
 ;
-    LD A, (BC)
-    LD L, <Enemy_X_Position
-    ADD A, (HL)
-    LD (HL), A
-;
-    INC C
-    INC C
-    INC C
-    LD A, (BC)
-    LD L, <Enemy_PageLoc
-    ADC A, (HL)
-    LD (HL), A
+    LD A, B
+    DEC L                                   ;<Enemy_PageLoc
+    ADC A, (HL)                             ;add or subtract page location depending on offset
+    LD (HL), A                              ;store as new page location
     RET
 
 ;--------------------------------
