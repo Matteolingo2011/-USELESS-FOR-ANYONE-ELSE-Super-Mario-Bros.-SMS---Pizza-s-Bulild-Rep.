@@ -545,12 +545,7 @@ TileStreamRet:
     LD A, (GamePauseStatus)
     RRCA
     CALL NC, SpriteShuffler         ;[CPU TIME: 05 LINES]
-    ; JP SetHInt                      ;SKIP REDUNDANT CHECK
 LagFrame:
-;   ONLY SET H-INT IF FLAG IS SET
-    ; LD A, (Sprite0HitDetectFlag)
-    ; OR A
-    ; JP Z, DoSound
 SetHInt:
     LD A, %00110100
     OUT (VDPCON_PORT), A
@@ -651,9 +646,6 @@ ReadJoypads:
     LD A, ~($01 << P1_TH_LVL | $01 << P1_TH_DIR)
     OUT (IO_CONTROL), A
     ; GET INPUTS (A, START)
-    ;LD A, (IX + 0)  ; TIME WASTE
-    ;LD A, (IX + 0)  ; TIME WASTE
-    ;NOP             ; TIME WASTE
     IN A, CONTROLPORT1
     CPL
     LD (HL), A
