@@ -116,9 +116,6 @@ VdpVector:
     OUT (VDPCON_PORT), A
     LD A, $80
     OUT (VDPCON_PORT), A
-    LD A, (HorizontalScroll)        ;UPDATE VDP HSCROLL
-    NEG
-    LD (VDPHScroll), A
     JP NMIDone
 
 
@@ -329,6 +326,7 @@ ColdBoot:
     CALL InitializeMemory           ;clear memory using pointer in HL
     XOR A
     LD (OperMode), A                ;reset primary mode of operation
+    INC A
     LD (FrameDoneFlag), A
     LD A, $A5
     LD (WarmBootValidation), A      ;set warm boot flag
@@ -338,20 +336,61 @@ ColdBoot:
     CALL waitForVblank
     IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
     EI                              ;enable Z80 interrupts
-    ; MAIN LOOP START
+;   MAIN LOOP START
 EndlessLoop:
-    ; SKIP TO PAUSE ROUTINE IF GAME IS PAUSED
+    LD A, (FrameDoneFlag)
+    OR A
+    JP NZ, EndlessLoop
+    ; --- SOUND UPDATE ---
+    CALL SoundEngine
+    ; --- PAUSE ROUTINE ---
+    LD A, (OperMode)                ;are we in victory mode?
+    CP A, MODE_VICTORY              ;if so, go ahead
+    JP Z, ChkPauseTimer
+    CP A, MODE_GAMEPLAY             ;are we in game mode?
+    JP NZ, UpdateTopScore           ;if not, leave
+    LD A, (OperMode_Task)           ;if we are in game mode, are we running game engine?
+    CP A, $03
+    JP NZ, UpdateTopScore
+ChkPauseTimer:
+    LD A, (GamePauseTimer)          ;check if pause timer is still counting down
+    OR A
+    JP Z, ChkStart
+    DEC A
+    LD (GamePauseTimer), A          ;if so, decrement and leave
+    JP UpdateTopScore
+ChkStart:
+    LD A, (SavedJoypad1Bits)        ;check to see if start is pressed
+    AND A, $01 << SMS_BTN_START
+    JP Z, ClrPauseTimer
+    LD A, (GamePauseStatus)         ;check to see if timer flag is set
+    AND A, $80                      ;and if so, do not reset timer
+    JP NZ, UpdateTopScore
+    LD A, $2B                       ;set pause timer
+    LD (GamePauseTimer), A
+    LD A, SNDID_PAUSE
+    LD (SFXTrack0.SoundQueue), A
+    LD A, $01
+    LD (SndPauseFlag), A
     LD A, (GamePauseStatus)
-    RRCA
-    JP C, DoPauseRoutine
-    ; DO MAIN GAME EXEC
-    CALL OperModeExecutionTree
-    ; UPDATE TOP SCORES
+    XOR A, $01                      ;invert d0 and set d7
+    OR A, $80
+    JP SetPause                     ;unconditional branch
+ClrPauseTimer:
+    LD A, (GamePauseStatus)         ;clear timer flag if timer is at zero and start button
+    AND A, $7F                      ;is not pressed
+SetPause:
+    LD (GamePauseStatus), A
+    ; --- UPDATE TOP SCORE ---
+UpdateTopScore:
     LD DE, PlayerScoreDisplay + $05     ;start with mario's score
     CALL TopScoreCheck
     LD DE, OffScr_ScoreDisplay + $05    ;now do luigi's score
     CALL TopScoreCheck
-    ; DO TIMER UPDATE
+    ; --- TIMER UPDATE ---
+    LD A, (GamePauseStatus)
+    RRCA
+    JP C, TickPRNG
     LD HL, TimerControl
     LD A, (HL)
     OR A                            ;if master timer control not set, decrement
@@ -383,46 +422,7 @@ SkipExpTimer:
 NoDecTimers:
     LD HL, FrameCounter             ;increment frame counter
     INC (HL)
-;   PAUSE ROUTINE
-DoPauseRoutine:
-    LD A, (OperMode)                ;are we in victory mode?
-    CP A, MODE_VICTORY              ;if so, go ahead
-    JP Z, ChkPauseTimer
-    CP A, MODE_GAMEPLAY             ;are we in game mode?
-    JP NZ, TickPRNG                 ;if not, leave
-    LD A, (OperMode_Task)           ;if we are in game mode, are we running game engine?
-    CP A, $03
-    JP NZ, TickPRNG
-ChkPauseTimer:
-    LD A, (GamePauseTimer)          ;check if pause timer is still counting down
-    OR A
-    JP Z, ChkStart
-    DEC A
-    LD (GamePauseTimer), A          ;if so, decrement and leave
-    JP TickPRNG
-ChkStart:
-    LD A, (SavedJoypad1Bits)        ;check to see if start is pressed
-    AND A, $01 << SMS_BTN_START
-    JP Z, ClrPauseTimer
-    LD A, (GamePauseStatus)         ;check to see if timer flag is set
-    AND A, $80                      ;and if so, do not reset timer
-    JP NZ, TickPRNG
-    LD A, $2B                       ;set pause timer
-    LD (GamePauseTimer), A
-    LD A, SNDID_PAUSE
-    LD (SFXTrack0.SoundQueue), A
-    LD A, $01
-    LD (SndPauseFlag), A
-    LD A, (GamePauseStatus)
-    XOR A, $01                      ;invert d0 and set d7
-    OR A, $80
-    JP SetPause                    ;unconditional branch
-ClrPauseTimer:
-    LD A, (GamePauseStatus)         ;clear timer flag if timer is at zero and start button
-    AND A, $7F                      ;is not pressed
-SetPause:
-    LD (GamePauseStatus), A
-;   PRNG UPDATE
+    ; --- PRNG UPDATE ---
 TickPRNG:
     LD HL, PseudoRandomBitReg
     LD B, $07
@@ -436,16 +436,21 @@ RotPRandomBit:
     RR (HL)                         ;rotate carry into d7, and rotate last bit into carry
     INC L                           ;increment to next byte
     DJNZ RotPRandomBit              ;decrement for loop
-
-    CALL SoundEngine
-;   MAIN LOOP WAIT
-    LD HL, FrameDoneFlag
-    INC (HL)
-NMIWait:
-    LD A, (FrameDoneFlag)
-    OR A
-    JP NZ, NMIWait
-
+    ; --- SPRITE SHUFFLE ---
+    LD A, (Sprite0HitDetectFlag)
+    CPL
+    LD B, A
+    LD A, (GamePauseStatus)
+    OR A, B
+    RRCA                            ;[CPU TIME: 05 LINES]
+    CALL NC, SpriteShuffler
+    ; --- MAIN GAME EXEC ---
+    LD A, (GamePauseStatus)
+    RRCA
+    CALL NC, OperModeExecutionTree
+    ; --- FRAME COMPLETE ---
+    LD A, $01
+    LD (FrameDoneFlag), A
     JP EndlessLoop                  ;endless loop, need I say more?
 
 ;-------------------------------------------------------------------------------------
@@ -467,21 +472,20 @@ VRAM_AddrTable:
 .ENDS
 
 NonMaskableInterrupt:
-;   SAVE ALL REGISTERS
-    PUSH BC
-    PUSH DE
-    PUSH HL
-    PUSH IX
 ;   INITIALIZE H SCROLL REG
     XOR A
     OUT (VDPCON_PORT), A
     LD A, $88
     OUT (VDPCON_PORT), A
-;   CHECK FOR LAG FRAME
+;   SKIP VDP UPDATE AND JOYPAD READING IF ON A LAG FRAME
     LD A, (FrameDoneFlag)
     RRA
     JP NC, LagFrame
     LD (FrameDoneFlag), A
+;   SET VDP HSCROLL TO HSCROLL VALUE FROM LAST PROCESSED GAME FRAME
+    LD A, (HorizontalScroll)
+    NEG
+    LD (VDPHScroll), A
 ;   TURN OFF SCREEN IF FLAG IS CLEAR
     LD A, %10100000
     LD HL, DisableScreenFlag
@@ -538,33 +542,20 @@ NonMaskableInterrupt:
     JP StreamAnimatedBGTiles        ;[CPU TIME: ~25 LINES]
 TileStreamRet:
     CALL ReadJoypads
-;   DO SPRITE SHUFFLE IF (SPRITE 0 FLAG ISN'T SET && GAME ISN'T PAUSED)
+;   DON'T SET H-INT IF SPRITE 0 FLAG ISN'T SET (LAG FRAMES ALWAYS SET H-INT)
     LD A, (Sprite0HitDetectFlag)
     OR A
-    JP Z, DoSound
-    LD A, (GamePauseStatus)
-    RRCA
-    CALL NC, SpriteShuffler         ;[CPU TIME: 05 LINES]
+    JP Z, NMIDone
 LagFrame:
-SetHInt:
     LD A, %00110100
     OUT (VDPCON_PORT), A
     LD A, $80
     OUT (VDPCON_PORT), A
-DoSound:
-    ;CALL SoundEngine
-;   RESTORE REGISTERS
-    POP IX
-    POP HL
-    POP DE
-    POP BC
 NMIDone:
     POP AF
 ;   NMI END
     EI                              ;enable Z80 interrupts
     RET
-
-
 
 ;-------------------------------------------------------------------------------------
 
