@@ -3048,7 +3048,7 @@ PRandomSubtracter:
 FlyCCBPriority:
     .db $20, $20, $20, $00, $00
 
-    .db $B5, $1E, $29, $20, $F0, $08    ; 6502 code spill over when indexing PRandomSubtracter
+    .db $B5, $1E, $29, $20, $F0, $08            ;6502 code spill over when indexing PRandomSubtracter
 .ENDS
 
 MoveFlyingCheepCheep:
@@ -3056,37 +3056,35 @@ MoveFlyingCheepCheep:
 ;
 
 .IF PALBUILD == $00
-    LD L, <Enemy_State
+    LD L, <Enemy_State                          ;check cheep-cheep's enemy state
     LD A, (HL)
-    AND A, %00100000
-    JP NZ, MoveJ_EnemyVertically
+    AND A, %00100000                            ;for d5 set
+    JP NZ, MoveJ_EnemyVertically                ;if set, move defeated cheep-cheep downwards
 ;
-    CALL MoveEnemyHorizontally
-    LD BC, $0D05
-    ;XOR A
-    ;CALL ImposeGravity
-    CALL ImposeGravity_A0
+    CALL MoveEnemyHorizontally                  ;move cheep-cheep horizontally based on speed and force
+    LD BC, $0D05                                ;set vertical movement amount and max speed
+    CALL ImposeGravity_A0                       ;branch to impose gravity on flying cheep-cheep
 ;
-    LD L, <Enemy_Y_MoveForce
-    LD A, (HL)
+    LD L, <Enemy_Y_MoveForce                    ;get vertical movement force and
+    LD A, (HL)                                  ;move high nybble to low
     RRCA
     RRCA
     RRCA
     RRCA
     AND A, $0F
-    LD BC, PRandomSubtracter
+    LD BC, PRandomSubtracter                    ;use as offset (note this tends to go into reach of code)
     addAToBC8_M
     LD A, (BC)
     LD C, A
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position                     ;get vertical position
     LD A, (HL)
-    SUB A, C
-    JP P, AddCCF
-    NEG
+    SUB A, C                                    ;subtract pseudorandom value based on offset from position
+    JP P, AddCCF                                ;if result within top half of screen, skip this part
+    NEG                                         ;otherwise get two's compliment
 AddCCF:
-    CP A, $08
-    RET NC ; JP NC, BPGet
-    LD L, <Enemy_Y_MoveForce
+    CP A, $08                                   ;if result or two's compliment greater than eight,
+    RET NC                                      ;skip to the end without changing movement force
+    LD L, <Enemy_Y_MoveForce                    ;otherwise add to it
     LD A, (HL)
     ADD A, $10
     LD (HL), A
@@ -3101,8 +3099,6 @@ AddCCF:
     CALL MoveEnemyHorizontally
     LD BC, $1705
 FlyCC:
-    ;XOR A
-    ;JP ImposeGravity
     JP ImposeGravity_A0
 .ENDIF
 
@@ -3263,76 +3259,77 @@ BridgeCollapseData:
 .ENDS
 
 BridgeCollapse:
-    LD HL, (BowserFront_Offset - 1)
-    LD L, <Enemy_ID
+    LD HL, (BowserFront_Offset - 1)             ;get enemy offset for bowser
+    LD L, <Enemy_ID                             ;check enemy object identifier for bowser
     LD A, (HL)
-    CP A, OBJECTID_Bowser
-    JP NZ, SetM2
+    CP A, OBJECTID_Bowser                       ;if not found, branch ahead,
+    JP NZ, SetM2                                ;metatile removal not necessary
 ;
-    LD (ObjectOffset), HL
-    LD L, <Enemy_State
+    LD (ObjectOffset), HL                       ;store as enemy offset here
+    LD L, <Enemy_State                          ;if bowser in normal state, skip all of this
     LD A, (HL)
     OR A
     JP Z, RemoveBridge
 ;
-    AND A, %01000000
+    AND A, %01000000                            ;if bowser's state has d6 clear, skip to silence music
     JP Z, SetM2
 ;
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position                     ;check bowser's vertical coordinate
     LD A, (HL)
-    CP A, $E0
+    CP A, $E0                                   ;if bowser not yet low enough, skip this part ahead
     JP C, MoveD_Bowser
-;
+    ; FALL THROUGH
+
 SetM2:
-    LD A, SNDID_SILENCE
-    LD (MusicTrack0.SoundQueue), A  ; EVENT
-    LD HL, OperMode_Task
+    LD A, SNDID_SILENCE                         ;silence music
+    LD (MusicTrack0.SoundQueue), A              ;EVENT
+    LD HL, OperMode_Task                        ;move onto next secondary mode in autoctrl mode
     INC (HL)
-    JP KillAllEnemies
+    JP KillAllEnemies                           ;jump to empty all enemy slots and then leave
 
 MoveD_Bowser:
-    CALL MoveEnemySlowVert
-    JP BowserGfxHandler
+    CALL MoveEnemySlowVert                      ;do a sub to move bowser downwards
+    JP BowserGfxHandler                         ;jump to draw bowser's front and rear, then leave
 
 RemoveBridge:
-    LD A, (BowserFeetCounter)
+    LD A, (BowserFeetCounter)                   ;decrement timer to control bowser's feet
     DEC A
     LD (BowserFeetCounter), A
-    JP NZ, BowserGfxHandler
+    JP NZ, BowserGfxHandler                     ;if not expired, skip all of this
 ;
-    LD A, $04
+    LD A, $04                                   ;otherwise, set timer now
     LD (BowserFeetCounter), A
-    LD A, (BowserBodyControls)
+    LD A, (BowserBodyControls)                  ;invert bit to control bowser's feet
     XOR A, $01
     LD (BowserBodyControls), A
 ;
-    LD DE, (VRAM_Buffer1_Ptr)
-    LD A, (BridgeCollapseOffset)
+    LD DE, (VRAM_Buffer1_Ptr)                   ;load vram buffer offset
+    LD A, (BridgeCollapseOffset)                ;get bridge collapse offset here
     ADD A, A
-    LD HL, BridgeCollapseData
+    LD HL, BridgeCollapseData                   ;load name table address
     addAToHL8_M
     LD C, (HL)
     INC L
     LD B, (HL)
-    LD HL, BlockGfxData + $18
-    CALL RemBridge
+    LD HL, BlockGfxData + $18                   ;set offset for tile data for sub to draw blank metatile
+    CALL RemBridge                              ;do sub here to remove bowser's bridge metatiles
 ;
-    LD HL, (ObjectOffset)
-    LD A, SNDID_CANNON
-    LD (SFXTrack1.SoundQueue), A
-    LD A, SNDID_SHATTER
-    LD (SFXTrack2.SoundQueue), A
-    LD A, (BridgeCollapseOffset)
+    LD HL, (ObjectOffset)                       ;get enemy offset
+    LD A, SNDID_CANNON                          ;load the fireworks/gunfire sound into the square 2 sfx
+    LD (SFXTrack1.SoundQueue), A                ;queue while at the same time loading the brick
+    LD A, SNDID_SHATTER                         ;shatter sound into the noise sfx queue thus
+    LD (SFXTrack2.SoundQueue), A                ;producing the unique sound of the bridge collapsing
+    LD A, (BridgeCollapseOffset)                ;increment bridge collapse offset
     INC A
     LD (BridgeCollapseOffset), A
-    CP A, $0F
-    JP NZ, BowserGfxHandler
-    CALL InitVStf
-    LD L, <Enemy_State
+    CP A, $0F                                   ;if bridge collapse offset has not yet reached
+    JP NZ, BowserGfxHandler                     ;the end, go ahead and skip this part
+    CALL InitVStf                               ;initialize whatever vertical speed bowser has
+    LD L, <Enemy_State                          ;set bowser's state to one of defeated states (d6 set)
     LD (HL), %01000000
-    LD A, SNDID_FALL
+    LD A, SNDID_FALL                            ;play bowser defeat sound
     LD (SFXTrack1.SoundQueue), A
-    JP BowserGfxHandler
+    JP BowserGfxHandler                         ;jump to code that draws bowser
 
 ;--------------------------------
 
@@ -3910,125 +3907,124 @@ FlameTileData:
 .ENDS
 
 SetFlameTimer:
-    LD A, (BowserFlameTimerCtrl)
+    LD A, (BowserFlameTimerCtrl)            ;load counter as offset
     LD C, A
-    INC A
-    AND A, %00000111
-    LD (BowserFlameTimerCtrl), A
+    INC A                                   ;increment
+    AND A, %00000111                        ;mask out all but 3 LSB
+    LD (BowserFlameTimerCtrl), A            ;to keep in range of 0-7
     LD A, C
-    LD BC, FlameTimerData
+    LD BC, FlameTimerData                   ;load value to be used then leave
     addAToBC8_M
     LD A, (BC)
     RET
 
 ProcBowserFlame:
-    LD A, (TimerControl)
+    LD A, (TimerControl)                    ;if master timer control flag set,
     OR A
-    JP NZ, SetGfxF
+    JP NZ, SetGfxF                          ;skip all of this
 ;
-    LD A, (SecondaryHardMode)
+    LD A, (SecondaryHardMode)               ;if secondary hard mode flag not set, use default
     OR A
 
     .IF PALBUILD == $00
-    LD A, $40
+    LD B, $40                               ;load default movement force
     JP Z, SFlmX
-    LD A, $60
+    LD B, $60                               ;otherwise load alternate movement force to go faster
     .ELSE
-    LD A, $70                           ;PAL diff: Faster acceleration to compensate FPS difference
+    LD B, $70                               ;PAL diff: Faster acceleration to compensate FPS difference
     JP Z, SFlmX
-    LD A, $90                           ;PAL diff: Faster acceleration to compensate FPS difference
+    LD B, $90                               ;PAL diff: Faster acceleration to compensate FPS difference
     .ENDIF
 
 SFlmX:
-    LD B, A
-;
-    LD L, <Enemy_X_MoveForce
+    LD L, <Enemy_X_MoveForce                ;subtract value from movement force
     LD A, (HL)
     SUB A, B
-    LD (HL), A
+    LD (HL), A                              ;save new value
 ;
-    LD L, <Enemy_X_Position
-    LD A, (HL)
+    LD L, <Enemy_X_Position                 ;subtract one from horizontal position to move
+    LD A, (HL)                              ;to the left
     SBC A, $01
     LD (HL), A
 ;
-    LD L, <Enemy_PageLoc
+    LD L, <Enemy_PageLoc                    ;subtract borrow from page location
     LD A, (HL)
     SBC A, $00
     LD (HL), A
 ;
-    LD L, <BowserFlamePRandomOfs
+    LD L, <BowserFlamePRandomOfs            ;get some value here and use as offset
     LD A, (HL)
     LD BC, FlameYPosData
     addAToBC8_M
     LD A, (BC)
-    LD L, <Enemy_Y_Position
-    CP A, (HL)
-    JP Z, SetGfxF
-    LD A, (HL)
-    LD L, <Enemy_Y_MoveForce
+    LD L, <Enemy_Y_Position                 ;load vertical coordinate
+    CP A, (HL)                              ;compare against coordinate data using $0417,x as offset
+    JP Z, SetGfxF                           ;if equal, branch and do not modify coordinate
+    LD A, (HL)                              ;otherwise add value here to coordinate and store
+    LD L, <Enemy_Y_MoveForce                ;as new vertical coordinate
     ADD A, (HL)
     LD L, <Enemy_Y_Position
     LD (HL), A
 ;
 SetGfxF:
-    CALL RelativeEnemyPosition
-    LD L, <Enemy_State
+    CALL RelativeEnemyPosition              ;get new relative coordinates
+    LD L, <Enemy_State                      ;if bowser's flame not in normal state,
     LD A, (HL)
     OR A
-    RET NZ
+    RET NZ                                  ;branch to leave
 ;
-    LD L, <Enemy_SprDataOffset
+    LD L, <Enemy_SprDataOffset              ;get OAM data offset
     LD E, (HL)
     LD D, >Sprite_Y_Position
-    LD HL, FlameTileData
+    LD HL, FlameTileData                    ;get tile list based value that changes every two frames
     LD A, (FrameCounter)
     AND A, %00000010
     JP Z, FlmeAt
     LD L, <FlameTileData + $03
 FlmeAt:
-    LD BC, $03FF
+    LD BC, $03FF                            ;B is number of tiles, C is so LDI doesn't affect B
+    ; FALL THROUGH
 
 DrawFlameLoop:
-    LD A, (Enemy_Rel_YPos)
+    LD A, (Enemy_Rel_YPos)                  ;get Y relative coordinate of current enemy object
     SUB A, SMS_PIXELYOFFSET
-    LD (DE), A
+    LD (DE), A                              ;write into Y coordinate of OAM data
     SLA E
     SET 7, E
-    LD A, (Enemy_Rel_XPos)
+    LD A, (Enemy_Rel_XPos)                  ;write X relative coordinate of current enemy object
     LD (DE), A
     INC E
-    LDI
+    LDI                                     ;write tile number
     RES 7, E
     SRL E
-    ADD A, $08
+    ADD A, $08                              ;add eight to X rel coord and store
     LD (Enemy_Rel_XPos), A
-    DJNZ DrawFlameLoop
+    DJNZ DrawFlameLoop                      ;do for all tiles
 ;
-    LD HL, (ObjectOffset)
-    CALL GetEnemyOffscreenBits
-    LD L, <Enemy_SprDataOffset
+    LD HL, (ObjectOffset)                   ;reload original enemy offset
+    CALL GetEnemyOffscreenBits              ;get offscreen information
+    LD L, <Enemy_SprDataOffset              ;get OAM data offset
     LD E, (HL)
     LD D, >Sprite_Y_Position
     INC E
     INC E
-    LD A, (Enemy_OffscrBits)
+    LD A, (Enemy_OffscrBits)                ;get enemy object offscreen bits
     LD C, A
-    LD A, YPOS_OFFSCREEN
+    LD A, YPOS_OFFSCREEN                    ;load offscreen position
     SRL C
     SRL C
-    JP NC, M2FOfs
-    LD (DE), A
+    JP NC, M2FOfs                           ;branch if d1 isn't set
+    LD (DE), A                              ;otherwise move third sprite offscreen
 M2FOfs:
     DEC E
     SRL C
-    JP NC, M1FOfs
-    LD (DE), A
+    JP NC, M1FOfs                           ;branch if d2 isn't set
+    LD (DE), A                              ;otherwise move second sprite offscreen
 M1FOfs:
     DEC E
     SRL C
-    RET NC
-    LD (DE), A
+    RET NC                                  ;branch if d3 isn't set
+    LD (DE), A                              ;otherwise move first sprite offscreen
     RET
 
 ;--------------------------------
@@ -4036,40 +4032,40 @@ M1FOfs:
 RunFireworks:
     POP HL
 ;
-    LD L, <ExplosionTimerCounter
+    LD L, <ExplosionTimerCounter            ;decrement explosion timing counter here
     DEC (HL)
-    JP NZ, SetupExpl
+    JP NZ, SetupExpl                        ;if not expired, skip this part
 ;
-    LD (HL), $08
-    LD L, <ExplosionGfxCounter
+    LD (HL), $08                            ;reset counter
+    LD L, <ExplosionGfxCounter              ;increment explosion graphics counter
     INC (HL)
     LD A, (HL)
-    CP A, $03
-    JP NC, FireworksSoundScore
-;
+    CP A, $03                               ;check explosion graphics counter
+    JP NC, FireworksSoundScore              ;if at a certain point, branch to kill this object
+    ; FALL THROUGH
+
 SetupExpl:
-    CALL RelativeEnemyPosition
+    CALL RelativeEnemyPosition              ;get relative coordinates of explosion
 ;
-    LD A, (Enemy_Rel_YPos)
-    LD (Fireball_Rel_YPos), A
-    LD A, (Enemy_Rel_XPos)
+    LD A, (Enemy_Rel_YPos)                  ;copy relative coordinates
+    LD (Fireball_Rel_YPos), A               ;from the enemy object to the fireball object
+    LD A, (Enemy_Rel_XPos)                  ;first vertical, then horizontal
     LD (Fireball_Rel_XPos), A
 ;
-
-    LD L, <Enemy_SprDataOffset
+    LD L, <Enemy_SprDataOffset              ;get OAM data offset
     LD E, (HL)
-    LD L, <ExplosionGfxCounter
+    LD L, <ExplosionGfxCounter              ;get explosion graphics counter
     LD A, (HL)
-    JP DrawExplosion_Fireworks
+    JP DrawExplosion_Fireworks              ;do a sub to draw the explosion then leave
 
 FireworksSoundScore:
-    LD L, <Enemy_Flag
+    LD L, <Enemy_Flag                       ;disable enemy buffer flag
     LD (HL), $00
-    LD A, SNDID_CANNON
+    LD A, SNDID_CANNON                      ;play fireworks/gunfire sound
     LD (SFXTrack1.SoundQueue), A
-    LD A, $05
+    LD A, $05                               ;set part of score modifier for 500 points
     LD (DigitModifier + $04 * $100), A
-    JP EndAreaPoints
+    JP EndAreaPoints                        ;jump to award points accordingly then leave
 
 ;--------------------------------
 
@@ -4085,15 +4081,15 @@ FireworksSoundScore:
 RunStarFlagObj:
     POP HL
 ;
-    XOR A
+    XOR A                                   ;initialize enemy frenzy buffer
     LD (EnemyFrenzyBuffer), A
 ;
-    LD A, (StarFlagTaskControl)
-    CP A, $05
+    LD A, (StarFlagTaskControl)             ;check star flag object task number here
+    CP A, $05                               ;if greater than 5, branch to exit
     RET NC
 ;
     PUSH HL
-    RST JumpEngine
+    RST JumpEngine                          ;otherwise jump to appropriate sub
 
     .dw StarFlagExit
     .dw GameTimerFireworks
@@ -4104,24 +4100,25 @@ RunStarFlagObj:
 GameTimerFireworks:
     POP HL
 ;
-    LD C, $05
-    LD A, (GameTimerDisplay+2)
+    LD C, $05                               ;set default state for star flag object
+    LD A, (GameTimerDisplay+2)              ;get game timer's last digit
     CP A, $01
-    JP Z, SetFWC
-    LD C, $03
+    JP Z, SetFWC                            ;if last digit of game timer set to 1, skip ahead
+    LD C, $03                               ;otherwise load new value for state
     CP A, $03
-    JP Z, SetFWC
-    LD C, $00
+    JP Z, SetFWC                            ;if last digit of game timer set to 3, skip ahead
+    LD C, $00                               ;otherwise load one more potential value for state
     CP A, $06
-    JP Z, SetFWC
-    LD A, $FF
+    JP Z, SetFWC                            ;if last digit of game timer set to 6, skip ahead
+    LD A, $FF                               ;otherwise set value for no fireworks
 SetFWC:
-    LD (FireworksCounter), A
-    LD L, <Enemy_State
+    LD (FireworksCounter), A                ;set fireworks counter here
+    LD L, <Enemy_State                      ;set whatever state we have in star flag object
     LD (HL), C
+    ; FALL THROUGH
 
 IncrementSFTask1:
-    LD A, (StarFlagTaskControl)
+    LD A, (StarFlagTaskControl)             ;increment star flag object task number
     INC A
     LD (StarFlagTaskControl), A
     RET
@@ -4134,74 +4131,76 @@ AwardGameTimerPoints:
     POP HL
 ;
     EX DE, HL
-    LD HL, GameTimerDisplay
+    LD HL, GameTimerDisplay                 ;check all game timer digits for any intervals left
     LD A, (HL)
     INC L
     OR A, (HL)
     INC L
     OR A, (HL)
     EX DE, HL
-    JP Z, IncrementSFTask1
+    JP Z, IncrementSFTask1                  ;if no time left on game timer at all, branch to next task
 ;
     LD A, (FrameCounter)
-    AND A, %00000100
-    JP Z, NoTTick
-    LD A, SNDID_BEEP
+    AND A, %00000100                        ;check frame counter for d2 set (skip ahead
+    JP Z, NoTTick                           ;for four frames every four frames) branch if not set
+    LD A, SNDID_BEEP                        ;load timer tick sound
     LD (SFXTrack1.SoundQueue), A
 NoTTick:
-    LD A, $FF
+    LD A, $FF                               ;set adder here to $ff, or -1, to subtract one
     LD (DigitModifier + $05 * $100), A
-    LD DE, GameTimerDisplay + $02
-    CALL DigitsMathRoutine
-    LD A, $05
-    LD (DigitModifier + $05 * $100), A
+    LD DE, GameTimerDisplay + $02           ;set offset here to subtract from game timer's last digit
+    CALL DigitsMathRoutine                  ;subtract digit
+    LD A, $05                               ;set now to add 50 points
+    LD (DigitModifier + $05 * $100), A      ;per game timer interval subtracted
+    ; FALL THROUGH
 
 EndAreaPoints:
-    LD DE, PlayerScoreDisplay + $05
-    LD A, (CurrentPlayer)
+    LD DE, PlayerScoreDisplay + $05         ;load offset for mario's score by default
+    LD A, (CurrentPlayer)                   ;check player on the screen
     OR A
-    JP Z, ELPGive
-    LD E, <OffScr_ScoreDisplay + $05
+    JP Z, ELPGive                           ;if mario, do not change
+    LD E, <OffScr_ScoreDisplay + $05        ;otherwise load offset for luigi's score
 ELPGive:
-    CALL DigitsMathRoutine
+    CALL DigitsMathRoutine                  ;award 50 points per game timer interval
 ;
-    LD A, (CurrentPlayer)
+    LD A, (CurrentPlayer)                   ;get player on the screen (or 500 points per
+    ADD A, A                                ;fireworks explosion if branched here from there)
+    ADD A, A                                ;shift to high nybble
     ADD A, A
     ADD A, A
-    ADD A, A
-    ADD A, A
-    OR A, %00000100
-    JP UpdateNumber
+    OR A, %00000100                         ;add four to set nybble for game timer
+    JP UpdateNumber                         ;jump to print the new score and game timer
 
 RaiseFlagSetoffFWorks:
     POP HL
 ;
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position                 ;check star flag's vertical position
     LD A, (HL)
-    CP A, $72
-    JP C, SetoffF
-    DEC (HL)
-    JP DrawStarFlag
+    CP A, $72                               ;against preset value
+    JP C, SetoffF                           ;if star flag higher vertically, branch to other code
+    DEC (HL)                                ;otherwise, raise star flag by one pixel
+    JP DrawStarFlag                         ;and skip this part here
 SetoffF:
-    LD A, (FireworksCounter)
+    LD A, (FireworksCounter)                ;check fireworks counter
     OR A
-    JP Z, DrawFlagSetTimer
-    JP M, DrawFlagSetTimer
+    JP Z, DrawFlagSetTimer                  ;if no fireworks left to go off, skip this part
+    JP M, DrawFlagSetTimer                  ;if no fireworks set to go off, skip this part
     LD A, OBJECTID_Fireworks
-    LD (EnemyFrenzyBuffer), A
+    LD (EnemyFrenzyBuffer), A               ;otherwise set fireworks object in frenzy queue
+    ; FALL THROUGH
 
 DrawStarFlag:
-    CALL RelativeEnemyPosition
+    CALL RelativeEnemyPosition              ;get relative coordinates of star flag
 ;
-    LD L, <Enemy_SprDataOffset
+    LD L, <Enemy_SprDataOffset              ;get OAM data offset
     LD E, (HL)
     LD D, >Sprite_Y_Position
     EX DE, HL
-    LD A, (Enemy_Rel_YPos)
+    LD A, (Enemy_Rel_YPos)                  ;get relative vertical coordinate
     SUB A, SMS_PIXELYOFFSET
     LD C, A
     ADD A, $08
-    LD (HL), A
+    LD (HL), A                              ;store Y coordinates
     INC L
     LD (HL), A
     INC L
@@ -4210,14 +4209,14 @@ DrawStarFlag:
     LD (HL), C
     EX DE, HL
 ;
-    LD E, (HL)
+    LD E, (HL)                              ;get OAM data offset
     SLA E
     SET 7, E
     EX DE, HL
-    LD A, (Enemy_Rel_XPos)
+    LD A, (Enemy_Rel_XPos)                  ;get relative horizontal coordinate
     LD C, A
     ADD A, $08
-    LD (HL), A
+    LD (HL), A                              ;store X coordinates and tile numbers
     INC L
     LD (HL), $4C
     INC L
@@ -4236,17 +4235,18 @@ DrawStarFlag:
     RET
 
 DrawFlagSetTimer:
-    CALL DrawStarFlag
+    CALL DrawStarFlag                       ;do sub to draw star flag
 ;
-    LD A, H
+    LD A, H                                 ;set interval timer here
     SUB A, $C1
     LD BC, EnemyIntervalTimer
     addAToBC8_M
     LD A, $06
     LD (BC), A
+    ; FALL THROUGH
 
 IncrementSFTask2:
-    LD A, (StarFlagTaskControl)
+    LD A, (StarFlagTaskControl)             ;move onto next task
     INC A
     LD (StarFlagTaskControl), A
     RET
@@ -4254,115 +4254,107 @@ IncrementSFTask2:
 DelayToAreaEnd:
     POP HL
 ;
-    CALL DrawStarFlag                           ;do sub to draw star flag
+    CALL DrawStarFlag                       ;do sub to draw star flag
 ;
-    LD A, H                                     ;if interval timer set in previous task
+    LD A, H                                 ;if interval timer set in previous task
     SUB A, $C1
     LD BC, EnemyIntervalTimer
     addAToBC8_M
     LD A, (BC)
     OR A
-    RET NZ                                      ;not yet expired, branch to leave
+    RET NZ                                  ;not yet expired, branch to leave
 ;
-    LD A, (MusicTrack0.SoundPlaying)            ;if event music buffer empty,
+    LD A, (MusicTrack0.SoundPlaying)        ;if event music buffer empty,
     CP A, SNDID_LEVELDONE
-    JP NZ, IncrementSFTask2                     ;branch to increment task
+    JP NZ, IncrementSFTask2                 ;branch to increment task
     RET
 
 ;--------------------------------
-;$00 - used to store horizontal difference between player and piranha plant
+;$00(C) - used to store horizontal difference between player and piranha plant
 
 MovePiranhaPlant:
     POP HL
 ;
-    LD L, <Enemy_State
+    LD L, <Enemy_State                      ;check enemy state
     LD A, (HL)
     OR A
-    RET NZ ;JP NZ, PutinPipe
+    RET NZ                                  ;if set at all, branch to leave
 ;
-    LD A, H
+    LD A, H                                 ;check enemy's timer here
     SUB A, $C1
     LD BC, EnemyFrameTimer
     addAToBC8_M
     LD A, (BC)
     OR A
-    RET NZ ;JP NZ, PutinPipe
+    RET NZ                                  ;branch to end if not yet expired
 ;
-    LD L, <PiranhaPlant_MoveFlag
+    LD L, <PiranhaPlant_MoveFlag            ;check movement flag
     LD A, (HL)
     OR A
-    JP NZ, SetupToMovePPlant
+    JP NZ, SetupToMovePPlant                ;if moving, skip to part ahead
 ;
-    LD L, <PiranhaPlant_Y_Speed
+    LD L, <PiranhaPlant_Y_Speed             ;if currently rising, branch 
     LD A, (HL)
     OR A
-    JP M, ReversePlantSpeed
+    JP M, ReversePlantSpeed                 ;to move enemy upwards out of pipe
 ;
-    CALL PlayerEnemyDiff
-    JP P, ChkPlayerNearPipe
-;
+    CALL PlayerEnemyDiff                    ;get horizontal difference between player and
     LD A, (Temp_Bytes + $00)
-    NEG
-    LD (Temp_Bytes + $00), A
+    JP P, ChkPlayerNearPipe                 ;piranha plant, and branch if enemy to right of player
+;
+    NEG                                     ;otherwise, change to two's compliment
 
 ChkPlayerNearPipe:
-    LD A, (Temp_Bytes + $00)
-    CP A, $21
-    RET C ;JP C, PutinPipe
+    CP A, $21                               ;get saved horizontal difference
+    RET C                                   ;if player within a certain distance, branch to leave
+    ; FALL THROUGH
 
 ReversePlantSpeed:
-    LD L, <PiranhaPlant_Y_Speed
+    LD L, <PiranhaPlant_Y_Speed             ;get vertical speed
     LD A, (HL)
-    NEG
-    LD (HL), A
-    LD L, <PiranhaPlant_MoveFlag
+    NEG                                     ;change to two's compliment
+    LD (HL), A                              ;save as new vertical speed
+    LD L, <PiranhaPlant_MoveFlag            ;increment to set movement flag
     INC (HL)
+    ; FALL THROUGH
 
 SetupToMovePPlant:
-    LD L, <PiranhaPlant_Y_Speed
+    LD L, <PiranhaPlant_Y_Speed             ;get vertical speed
     LD A, (HL)
     OR A
-    LD L, <PiranhaPlantDownYPos
-    LD A, (HL)
-    JP P, RiseFallPiranhaPlant
-    LD L, <PiranhaPlantUpYPos
-    LD A, (HL)
+    LD L, <PiranhaPlantDownYPos             ;get original vertical coordinate (lowest point)
+    JP P, RiseFallPiranhaPlant              ;branch if moving downwards
+    LD L, <PiranhaPlantUpYPos               ;otherwise get other vertical coordinate (highest point)
+    ; FALL THROUGH
 
 RiseFallPiranhaPlant:
-    LD (Temp_Bytes + $00), A
+    LD C, (HL)                              ;save vertical coordinate here
 ;
-    LD A, (FrameCounter)
+    LD A, (FrameCounter)                    ;get frame counter
     RRCA
-    RET NC ;JP NC, PutinPipe
-    LD A, (TimerControl)
+    RET NC                                  ;branch to leave if d0 set (execute code every other frame)
+    LD A, (TimerControl)                    ;get master timer control
     OR A
-    RET NZ ;JP NZ, PutinPipe
+    RET NZ                                  ;branch to leave if set (likely not necessary)
 ;
     LD L, <PiranhaPlant_Y_Speed
     LD A, (HL)
-    LD L, <Enemy_Y_Position
-    ADD A, (HL)
-    LD (HL), A
+    LD L, <Enemy_Y_Position                 ;get current vertical coordinate
+    ADD A, (HL)                             ;add vertical speed to move up or down
+    LD (HL), A                              ;save as new vertical coordinate
 ;
-    LD A, (Temp_Bytes + $00)
-    LD C, A
-    LD A, (HL)
-    CP A, C
-    RET NZ ;JP NZ, PutinPipe
+    CP A, C                                 ;compare against low or high coordinate
+    RET NZ                                  ;branch to leave if not yet reached
 ;
-    LD L, <PiranhaPlant_MoveFlag
+    LD L, <PiranhaPlant_MoveFlag            ;otherwise clear movement flag
     LD (HL), $00
-    LD A, H
+;
+    LD A, H                                 ;set timer to delay piranha plant movement
     SUB A, $C1
     LD BC, EnemyFrameTimer
     addAToBC8_M
     LD A, $40
     LD (BC), A
-
-; PutinPipe:
-    ;LD A, %00100000
-    ;LD L, <Enemy_SprAttrib
-    ;LD (HL), A
     RET
 
 ;-------------------------------------------------------------------------------------
@@ -4856,71 +4848,71 @@ ChkSmallPlatCollision:
 ;$03(E) - extended right boundary position
 
 OffscreenBoundsCheck:
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                             ;check for cheep-cheep object
     LD A, (HL)
     CP A, OBJECTID_FlyingCheepCheep
-    RET Z
+    RET Z                                       ;branch to leave if found
 ;
-    CP A, OBJECTID_HammerBro
+    CP A, OBJECTID_HammerBro                    ;check for hammer bro object
     JP Z, LimitB
-    CP A, OBJECTID_PiranhaPlant
+    CP A, OBJECTID_PiranhaPlant                 ;check for piranha plant object
     JP NZ, ExtendLB
 LimitB:
-    LD A, (ScreenLeft_X_Pos)
-    ADD A, $39
-    CCF
-    SBC A, $48
+    LD A, (ScreenLeft_X_Pos)                    ;get horizontal coordinate for left side of screen
+    ADD A, $39                                  ;add 56 pixels to coordinate if hammer bro or piranha plant (carry+1)
+    CCF                                         ;flip carry to convert 6502 logic to Z80
+    SBC A, $48                                  ;subtract 72 pixels regardless of enemy object
     JP +
 ExtendLB:
-    LD A, (ScreenLeft_X_Pos)
-    SUB A, $49
+    LD A, (ScreenLeft_X_Pos)                    ;get horizontal coordinate for left side of screen
+    SUB A, $49                                  ;subtract 72 pixels regardless of enemy object (carry+1)
 +:
-    LD C, A
+    LD C, A                                     ;store result here
 ;
-    LD A, (ScreenLeft_PageLoc)
+    LD A, (ScreenLeft_PageLoc)                  ;subtract borrow from page location of left side
     SBC A, $00
-    LD B, A
+    LD B, A                                     ;store result here
 ;
-    LD A, (ScreenRight_X_Pos)
-    CCF
+    LD A, (ScreenRight_X_Pos)                   ;add 72 pixels to the right side horizontal coordinate
+    CCF                                         ;flip carry to convert 6502 logic to Z80
     ADC A, $48
-    LD E, A
+    LD E, A                                     ;store result here
 ;
-    LD A, (ScreenRight_PageLoc)
+    LD A, (ScreenRight_PageLoc)                 ;then add the carry to the page location
     ADC A, $00
-    LD D, A
+    LD D, A                                     ;and store result here
 ;
-    LD L, <Enemy_X_Position
+    LD L, <Enemy_X_Position                     ;compare horizontal coordinate of the enemy object
     LD A, (HL)
-    CP A, C
-    DEC L ; <Enemy_PageLoc
+    CP A, C                                     ;to modified horizontal left edge coordinate to get carry
+    DEC L                                       ;<Enemy_PageLoc
     LD A, (HL)
-    SBC A, B
-    JP M, EraseEnemyObject
+    SBC A, B                                    ;then subtract it from the page coordinate of the enemy object
+    JP M, EraseEnemyObject                      ;if enemy object is too far left, branch to erase it
 ;
-    INC L ; <Enemy_X_Position
+    INC L                                       ;<Enemy_X_Position
+    LD A, (HL)                                  ;compare horizontal coordinate of the enemy object
+    CP A, E                                     ;to modified horizontal right edge coordinate to get carry
+    DEC L                                       ;<Enemy_PageLoc
     LD A, (HL)
-    CP A, E
-    DEC L ; <Enemy_PageLoc
-    LD A, (HL)
-    SBC A, D
-    RET M
+    SBC A, D                                    ;then subtract it from the page coordinate of the enemy object
+    RET M                                       ;if enemy object is on the screen, leave, do not erase enemy
 ;
-    LD L, <Enemy_State
+    LD L, <Enemy_State                          ;if at this point, enemy is offscreen to the right, so check
     LD A, (HL)
-    CP A, OBJECTID_HammerBro
+    CP A, OBJECTID_HammerBro                    ;if in state used by spiny's egg, do not erase
     RET Z
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                             ;if piranha plant, do not erase
     LD A, (HL)
     CP A, OBJECTID_PiranhaPlant
     RET Z
-    CP A, OBJECTID_FlagpoleFlagObject
+    CP A, OBJECTID_FlagpoleFlagObject           ;if flagpole flag, do not erase
     RET Z
-    CP A, OBJECTID_StarFlagObject
+    CP A, OBJECTID_StarFlagObject               ;if star flag, do not erase
     RET Z
-    CP A, OBJECTID_JumpspringObject
+    CP A, OBJECTID_JumpspringObject             ;if jumpspring, do not erase
     RET Z
-    JP EraseEnemyObject
+    JP EraseEnemyObject                         ;erase all others too far to the right
 
 ;-------------------------------------------------------------------------------------
 
@@ -5724,6 +5716,7 @@ GiveOneCoin:
 CoinPoints:
     LD A, $02                           ;set digit modifier to award
     LD (DigitModifier + $04 * $100), A  ;200 points to the player
+    ; FALL THROUGH
 
 AddToScore:
     LD DE, PlayerScoreDisplay + $05
@@ -5733,6 +5726,7 @@ AddToScore:
     LD E, <OffScr_ScoreDisplay + $05
 +:
     CALL DigitsMathRoutine
+    ; FALL THROUGH
 
 GetSBNybbles:
     LD A, (CurrentPlayer)               ;get current player
@@ -5740,6 +5734,7 @@ GetSBNybbles:
     LD A, $02                           ;get nybbles based on player, use to update score and coins
     JP Z, UpdateNumber
     LD A, $13
+    ; FALL THROUGH
 
 UpdateNumber:
     CALL PrintStatusBarNumbers          ;print status bar numbers based on nybbles, whatever they be
@@ -7727,42 +7722,44 @@ ChkInvisibleMTiles:
 ;$00 - used as flag by ImpedePlayerMove to restrict specific movement
 
 ChkForLandJumpSpring:
-    CALL ChkJumpspringMetatiles
-    RET NZ
+    CALL ChkJumpspringMetatiles         ;do sub to check if player landed on jumpspring
+    RET NZ                              ;if carry not set, jumpspring not found, therefore leave
+;
     LD A, $70
-    LD (VerticalForce), A
-
+    LD (VerticalForce), A               ;otherwise set vertical movement force for player
+;
     .IF PALBUILD == $00
-    LD A, $F9
+    LD A, $F9                           ;set default jumpspring force
     .ELSE
     LD A, $F8                           ;PAL diff: Faster acceleration to accomodate FPS difference
     .ENDIF
 
     LD (JumpspringForce), A
-    LD A, $03
+;
+    LD A, $03                           ;set jumpspring timer to be used later
     LD (JumpspringTimer), A
-    LD A, $01
+    LD A, $01                           ;set jumpspring animation control to start animating
     LD (JumpspringAnimCtrl), A
     RET
 
 ChkJumpspringMetatiles:
-    CP A, MT_SPRING_BLANK
-    RET Z
-    CP A, MT_SPRING_HALF
+    CP A, MT_SPRING_BLANK               ;check for top jumpspring metatile
+    RET Z                               ;branch if found
+    CP A, MT_SPRING_HALF                ;check for bottom jumpspring metatile
     RET
 
 HandlePipeEntry:
-    LD A, (Up_Down_Buttons)
-    AND A, %00000100
-    RET Z
+    LD A, (Up_Down_Buttons)             ;check saved controller bits from earlier
+    AND A, %00000100                    ;for pressing down
+    RET Z                               ;if not pressing down, branch to leave
 ;
-    LD A, (Temp_Bytes + $00)
+    LD A, (Temp_Bytes + $00)            ;check right foot metatile for warp pipe right metatile
     CP A, MT_WARPPIPE_TOP_RIGHT
-    RET NZ
+    RET NZ                              ;branch to leave if not found
 ;
-    LD A, (Temp_Bytes + $01)
+    LD A, (Temp_Bytes + $01)            ;check left foot metatile for warp pipe left metatile
     CP A, MT_WARPPIPE_TOP_LEFT
-    RET NZ
+    RET NZ                              ;branch to leave if not found
 ;
     .IF PALBUILD == $00
     LD A, $30
@@ -7770,103 +7767,104 @@ HandlePipeEntry:
     LD A, $28                           ;PAL diff: Faster timer to accomodate FPS difference
     .ENDIF
 
-    LD (ChangeAreaTimer), A
+    LD (ChangeAreaTimer), A             ;set timer for change of area
 ;
     LD A, $03
-    LD (GameEngineSubroutine), A
+    LD (GameEngineSubroutine), A        ;set to run vertical pipe entry routine on next frame
 ;
     LD A, SNDID_PIPE
-    LD (SFXTrack0.SoundQueue), A
+    LD (SFXTrack0.SoundQueue), A        ;load pipedown/injury sound
 ;
     ;LD A, %00100000
     ;LD (Player_SprAttrib), A
 ;
-    LD A, (WarpZoneControl)
+    LD A, (WarpZoneControl)             ;check warp zone control
     OR A
-    RET Z
+    RET Z                               ;branch to leave if none found
 ;
-    AND A, %00000011
+    AND A, %00000011                    ;mask out all but 2 LSB
     ADD A, A
+    ADD A, A                            ;multiply by four
     ADD A, A
-    ADD A, A
-    LD HL, WarpZoneNumbers
+    LD HL, WarpZoneNumbers              ;save as offset to warp zone numbers (starts at left pipe)
     addAToHL8_M
-    LD A, (Player_X_Position)
+    LD A, (Player_X_Position)           ;get player's horizontal position
     CP A, $60
-    JP C, GetWNum
-    INC L
+    JP C, GetWNum                       ;if player at left, not near middle, use offset and skip ahead
+    INC L                               ;otherwise increment for middle pipe
     INC L
     CP A, $A0
-    JP C, GetWNum
-    INC L
+    JP C, GetWNum                       ;if player at middle, but not too far right, use offset and skip
+    INC L                               ;otherwise increment for last pipe
     INC L
 GetWNum:
-    LD A, (HL)
-    SUB A, BG_TILE_OFFSET + 1
-    LD (WorldNumber), A
+    LD A, (HL)                          ;get warp zone numbers
+    SUB A, BG_TILE_OFFSET + 1           ;decrement for use as world number
+    LD (WorldNumber), A                 ;store as world number and offset
     ADD A, A
-    LD HL, WorldAddrOffsets
+    LD HL, WorldAddrOffsets             ;get offset to where this world's area offsets are
     addAToHL8_M
     LD A, (HL)
     INC L
     LD H, (HL)
     LD L, A
-    LD A, (HL)
-    LD (AreaPointer), A
-    LD A, SNDID_SILENCE
-    LD (MusicTrack0.SoundQueue), A  ; EVENT
+    LD A, (HL)                          ;get area offset based on world offset
+    LD (AreaPointer), A                 ;store area offset here to be used to change areas
+    LD A, SNDID_SILENCE                 ;silence music
+    LD (MusicTrack0.SoundQueue), A      ;EVENT
     XOR A
-    LD (EntrancePage), A
-    LD (AreaNumber), A
-    LD (LevelNumber), A
-    LD (AltEntranceControl), A
+    LD (EntrancePage), A                ;initialize starting page number
+    LD (AreaNumber), A                  ;initialize area number used for area address offset
+    LD (LevelNumber), A                 ;initialize level number used for world display
+    LD (AltEntranceControl), A          ;initialize mode of entry
     INC A
-    LD (Hidden1UpFlag), A
-    LD (FetchNewGameTimerFlag), A
+    LD (Hidden1UpFlag), A               ;set flag for hidden 1-up blocks
+    LD (FetchNewGameTimerFlag), A       ;set flag to load new game timer
     RET
 
 ImpedePlayerMove:
-    LD A, (Temp_Bytes + $00)
+    LD A, (Temp_Bytes + $00)            ;store $00 into B
     LD B, A
 ;
-    LD C, $00
-    LD A, (Player_X_Speed)
-    DEC B
-    JP NZ, RImpd
-    INC B
-    OR A
-    JP M, ExIPM
-    DEC C
-    JP NXSpd
+    LD C, $00                           ;initialize value here
+    LD A, (Player_X_Speed)              ;get player's horizontal speed
+    DEC B                               ;left side collision
+    JP NZ, RImpd                        ;if right side collision, skip this part
+    INC B                               ;return value to B
+    OR A                                ;if player moving to the left,
+    JP M, ExIPM                         ;branch to invert bit and leave
+    DEC C                               ;otherwise load C with value to be used later
+    JP NXSpd                            ;and jump to affect movement
 RImpd:
-    LD B, $02
-    CP A, $01
-    JP P, ExIPM
-    INC C
+    LD B, $02                           ;return $02 to B
+    CP A, $01                           ;if player moving to the right,
+    JP P, ExIPM                         ;branch to invert bit and leave
+    INC C                               ;otherwise load C with value to be used here
 NXSpd:
-    LD A, $10
+    LD A, $10                           ;set timer of some sort
     LD (SideCollisionTimer), A
-    XOR A
+    XOR A                               ;nullify player's horizontal speed
     LD (Player_X_Speed), A
-    BIT 7, C
-    JP Z, PlatF
-    DEC A
+    INC C                               ;if value set in C not set to $ff,
+    DEC C
+    JP P, PlatF                         ;branch ahead, do not decrement Y
+    DEC A                               ;otherwise decrement A now
 PlatF:
-    LD E, A
+    LD E, A                             ;store A as high bits of horizontal adder                        
     LD A, C
-    LD HL, Player_X_Position
+    LD HL, Player_X_Position            ;add contents of A to player's horizontal
     ADD A, (HL)
-    LD (HL), A
-    DEC L
-    LD A, (HL)
-    ADC A, E
+    LD (HL), A                          ;position to move player left or right
+    DEC L                               ;Player_PageLoc
+    LD A, (HL)                          ;add high bits and carry to
+    ADC A, E                            ;page location if necessary
     LD (HL), A
 ExIPM:
     LD HL, Player_CollisionBits
-    LD A, B
+    LD A, B                             ;invert contents of B
     CPL
-    AND A, (HL)
-    LD (HL), A
+    AND A, (HL)                         ;mask out bit that was set here
+    LD (HL), A                          ;store to clear bit
     RET
 
 ;--------------------------------
@@ -7934,132 +7932,131 @@ EnemyBGCStateData:
 ; .ENDS
 
 EnemyToBGCollisionDet:
-    LD L, <Enemy_State
-    BIT 5, (HL)
-    RET NZ
+    LD L, <Enemy_State              ;check enemy state for d6 set*
+    BIT 5, (HL)                     ;*actually check d5
+    RET NZ                          ;if set, branch to leave
 ;
-    ; SubtEnemyYPos
-    LD L, <Enemy_Y_Position
-    LD A, (HL)
+    ;SubtEnemyYPos
+    LD L, <Enemy_Y_Position         ;add 62 pixels to enemy object's
+    LD A, (HL)                      ;vertical coordinate
     ADD A, $3E
-    CP A, $44
-    RET C
+    CP A, $44                       ;compare against a certain range
+    RET C                           ;if enemy vertical coord + 62 < 68, branch to leave
 ;
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;if enemy object is not spiny, branch elsewhere
     LD A, (HL)
     CP A, OBJECTID_Spiny
     JP NZ, DoIDCheckBGColl
 ;
     LD B, A
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position         ;if enemy vertical coordinate < 36 branch to leave
     LD A, (HL)
     CP A, $25
     RET C
     LD A, B
+    ; FALL THROUGH
 
 DoIDCheckBGColl:
-    CP A, OBJECTID_GreenParatroopaJump
-    JP Z, EnemyJump
+    CP A, OBJECTID_GreenParatroopaJump  ;check for some other enemy object
+    JP Z, EnemyJump                 ;jump elsewhere if found
 ;
-    CP A, OBJECTID_HammerBro
-    JP Z, HammerBroBGColl
+    CP A, OBJECTID_HammerBro        ;check for hammer bro
+    JP Z, HammerBroBGColl           ;jump elsewhere if found
 ;
-    CP A, OBJECTID_Spiny
+    CP A, OBJECTID_Spiny            ;if enemy object is spiny, branch
     JP Z, YesIn
-    CP A, OBJECTID_PowerUpObject
+    CP A, OBJECTID_PowerUpObject    ;if special power-up object, branch
     JP Z, YesIn
 ;
-    CP A, $07
+    CP A, $07                       ;if enemy object =>$07, branch to leave
     RET NC
 ;
 YesIn:
-    ChkUnderEnemy ;CALL ChkUnderEnemy
-    JP Z, ChkForRedKoopa
-    ; FALL THROUGH
+    ChkUnderEnemy                   ;if enemy object < $07, or = $12 or $2e, do this sub
+    JP Z, ChkForRedKoopa            ;if no block underneath enemy, skip and do something else
 
 ;--------------------------------
 ;$02(IXL) - vertical coordinate from block buffer routine
 
-HandleEToBGCollision:
-    CALL ChkForNonSolids
-    JP Z, ChkForRedKoopa
+;HandleEToBGCollision:
+    CALL ChkForNonSolids            ;if something is underneath enemy, find out what
+    JP Z, ChkForRedKoopa            ;if blank $26, coins, or hidden blocks, jump, enemy falls through
 ;
     CP A, MT_HITBLANK
-    JP NZ, LandEnemyProperly
+    JP NZ, LandEnemyProperly        ;check for blank metatile and branch if not found
 ;
-    XOR A
-    LD (DE), A
+    XOR A                           ;store default blank metatile in that spot so we won't
+    LD (DE), A                      ;trigger this routine accidentally again
 ;
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;if enemy object => $15, branch ahead
     LD A, (HL)
     CP A, $15
     JP NC, ChkToStunEnemies
 ;
-    CP A, OBJECTID_Goomba
+    CP A, OBJECTID_Goomba           ;if enemy object IS goomba, do this sub
     CALL Z, KillEnemyAboveBlock
-    ; FALL THROUGH
 
-GiveOEPoints:
-    LD A, $01
+;GiveOEPoints:
+    LD A, $01                       ;award 100 points for hitting block beneath enemy
     CALL SetupFloateyNumber
     ; FALL THROUGH
 
 ChkToStunEnemies:
-    CP A, $09
+    CP A, $09                       ;perform many comparisons on enemy object identifier
     JP C, SetStun
-    CP A, $11
-    JP NC, SetStun
-    CP A, $0A
-    JP C, Demote
-    CP A, OBJECTID_PiranhaPlant
-    JP C, SetStun
+    CP A, $11                       ;if the enemy object identifier is equal to the values
+    JP NC, SetStun                  ;$09, $0e, $0f or $10, it will be modified, and not
+    CP A, $0A                       ;modified if not any of those values, note that piranha plant will
+    JP C, Demote                    ;always fail this test because A will still have vertical
+    CP A, OBJECTID_PiranhaPlant     ;coordinate from previous addition, also these comparisons
+    JP C, SetStun                   ;are only necessary if branching from $d7a1
 Demote:
-    AND A, %00000001
-    LD L, <Enemy_ID
+    AND A, %00000001                ;erase all but LSB, essentially turning enemy object
+    LD L, <Enemy_ID                 ;into green or red koopa troopa to demote them
     LD (HL), A
 SetStun:
-    LD L, <Enemy_State
+    LD L, <Enemy_State              ;load enemy state
     LD A, (HL)
-    AND A, %11110000
+    AND A, %11110000                ;save high nybble
     OR A, %00000010
-    LD (HL), A
+    LD (HL), A                      ;set d1 of enemy state
 ;
-    LD L, <Enemy_Y_Position
+    LD L, <Enemy_Y_Position         ;subtract two pixels from enemy's vertical position
     LD A, (HL)
     SUB A, $02
     LD (HL), A
 ;
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;check for bloober object
     LD A, (HL)
     CP A, OBJECTID_Bloober
     JP Z, SetWYSpd
     LD A, (AreaType)
     OR A
-    LD A, $FD
-    JP NZ, SetNotW
+    LD A, $FD                       ;set default vertical speed
+    JP NZ, SetNotW                  ;if area type not water, set as speed, otherwise
 SetWYSpd:
-    LD A, $FF
+    LD A, $FF                       ;change the vertical speed
 SetNotW:
-    LD L, <Enemy_Y_Speed
+    LD L, <Enemy_Y_Speed            ;set vertical speed now
     LD (HL), A
 ;
     LD C, $01
-    CALL PlayerEnemyDiff
-    LD B, $10                                   ;EnemyBGCXSpdData
-    JP P, ChkBBill
+    CALL PlayerEnemyDiff            ;get horizontal difference between player and enemy object
+    LD B, $10                       ;EnemyBGCXSpdData
+    JP P, ChkBBill                  ;branch if enemy is to the right of player
     LD B, $F0
-    INC C
+    INC C                           ;increment Y if not
 ChkBBill:
     LD L, <Enemy_ID
     LD A, (HL)
-    CP A, OBJECTID_BulletBill_CannonVar
+    CP A, OBJECTID_BulletBill_CannonVar ;check for bullet bill (cannon variant)
     JP Z, NoCDirF
-    CP A, OBJECTID_BulletBill_FrenzyVar
-    JP Z, NoCDirF
-    LD L, <Enemy_MovingDir
+    CP A, OBJECTID_BulletBill_FrenzyVar ;check for bullet bill (frenzy variant)
+    JP Z, NoCDirF                   ;branch if either found, direction does not change
+    LD L, <Enemy_MovingDir          ;store as moving direction
     LD (HL), C
 NoCDirF:
-    LD L, <Enemy_X_Speed
+    LD L, <Enemy_X_Speed            ;store proper horizontal speed
     LD (HL), B
     RET
 
@@ -8067,285 +8064,251 @@ NoCDirF:
 ;$04(IXH) - low nybble of vertical coordinate from block buffer routine
 
 LandEnemyProperly:
-    LD A, IXH
-    SUB A, $08
-    CP A, $05
-    JP NC, ChkForRedKoopa
+    LD A, IXH                       ;check lower nybble of vertical coordinate saved earlier
+    SUB A, $08                      ;subtract eight pixels
+    CP A, $05                       ;used to determine whether enemy landed from falling
+    JP NC, ChkForRedKoopa           ;branch if lower nybble in range of $0d-$0f before subtract
 ;
-    LD L, <Enemy_State
+    LD L, <Enemy_State              ;branch if d6 in enemy state is set
     LD A, (HL)
     BIT 6, A
     JP NZ, LandEnemyInitState
     OR A
-    JP M, DoEnemySideCheck
+    JP M, DoEnemySideCheck          ;if lower nybble < $0d, d7 set but d6 not set, jump here
 
-ChkLandedEnemyState:
-    JP Z, DoEnemySideCheck
-    CP A, $05
-    JP Z, ProcEnemyDirection
-    CP A, $03
-    RET NC
-    CP A, $02
-    JP NZ, ProcEnemyDirection
+;ChkLandedEnemyState:
+    JP Z, DoEnemySideCheck          ;if enemy in normal state, branch back to jump here
+    CP A, $05                       ;if in state used by spiny's egg
+    JP Z, ProcEnemyDirection        ;then branch elsewhere
+    CP A, $03                       ;if already in state used by koopas and buzzy beetles
+    RET NC                          ;or in higher numbered state, branch to leave
+    CP A, $02                       ;if not in $02 state (used by koopas and buzzy beetles)
+    JP NZ, ProcEnemyDirection       ;then branch elsewhere
 ;
     LD A, H
     SUB A, $C1
     LD BC, EnemyIntervalTimer
     addAToBC8_M
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;check enemy identifier for spiny
     LD A, (HL)
     CP A, OBJECTID_Spiny
-    LD A, $10
-    JP NZ, SetForStn
-    XOR A
+    LD A, $10                       ;load default timer here
+    JP NZ, SetForStn                ;branch if not found
+    XOR A                           ;set timer for $00 if spiny
 SetForStn:
-    LD (BC), A
+    LD (BC), A                      ;set timer here
 ;
-    LD L, <Enemy_State
-    LD (HL), $03
-    JP EnemyLanding
+    LD L, <Enemy_State              ;set state here, apparently used to render
+    LD (HL), $03                    ;upside-down koopas and buzzy beetles
+    JP EnemyLanding                 ;then land it properly
 
 ProcEnemyDirection:
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;check enemy identifier for goomba
     LD A, (HL)
     CP A, OBJECTID_Goomba
-    JP Z, LandEnemyInitState
-    CP A, OBJECTID_Spiny
-    JP NZ, InvtD
+    JP Z, LandEnemyInitState        ;branch if found
+    CP A, OBJECTID_Spiny            ;check for spiny
+    JP NZ, InvtD                    ;branch if not found
 ;
-    LD L, <Enemy_MovingDir
+    LD L, <Enemy_MovingDir          ;send enemy moving to the right by default
     LD (HL), $01
-    LD L, <Enemy_X_Speed
+    LD L, <Enemy_X_Speed            ;set horizontal speed accordingly
     LD (HL), $08
     LD A, (FrameCounter)
-    AND A, %00000111
-    JP Z, LandEnemyInitState
-;
+    AND A, %00000111                ;if timed appropriately, spiny will skip over
+    JP Z, LandEnemyInitState        ;trying to face the player
+    ; FALL THROUGH
+
 InvtD:
-    LD C, $01
-    CALL PlayerEnemyDiff
-    JP P, CNwCDir
-    INC C
+    LD C, $01                       ;load 1 for enemy to face the left (inverted here)
+    CALL PlayerEnemyDiff            ;get horizontal difference between player and enemy
+    JP P, CNwCDir                   ;if enemy to the right of player, branch
+    INC C                           ;if to the left, increment by one for enemy to face right (inverted)
 CNwCDir:
     LD A, C
-    LD L, <Enemy_MovingDir
+    LD L, <Enemy_MovingDir          ;compare direction in A with current direction in memory
     CP A, (HL)
-    CALL Z, ChkForBump_HammerBroJ
+    CALL Z, ChkForBump_HammerBroJ   ;if equal, not facing in correct dir, do sub to turn around
     ; FALL THROUGH
 
 LandEnemyInitState:
-    CALL EnemyLanding
+    CALL EnemyLanding               ;land enemy properly
 ;
-    LD L, <Enemy_State
+    LD L, <Enemy_State              ;if d7 of enemy state is set, branch
     LD A, (HL)
     OR A
     JP M, NMovShellFallBit
-    LD (HL), $00
-    RET
+    LD (HL), $00                    ;otherwise initialize enemy state and leave
+    RET                             ;note this will also turn spiny's egg into spiny
 
 NMovShellFallBit:
-    RES 6, (HL)
+    RES 6, (HL)                     ;nullify d6 of enemy state
     RET
 
 ;--------------------------------
 
 ChkForRedKoopa:
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;check for red koopa troopa $03
     LD A, (HL)
     CP A, OBJECTID_RedKoopa
     LD L, <Enemy_State
     LD A, (HL)
-    JP NZ, Chk2MSBSt
+    JP NZ, Chk2MSBSt                ;branch if not found
 ;
     OR A
-    JP Z, ChkForBump_HammerBroJ
+    JP Z, ChkForBump_HammerBroJ     ;if enemy found and in normal state, branch
     ; FALL THROUGH
 ;
 Chk2MSBSt:
-    OR A
-    JP P, GetSteFromD
-    SET 6, A
-    JP SetD6Ste
+    OR A                            ;check for d7 set
+    JP P, GetSteFromD               ;branch if not set
+    SET 6, A                        ;set d6
+    JP SetD6Ste                     ;jump ahead of this part
 GetSteFromD:
-    LD BC, EnemyBGCStateData
+    LD BC, EnemyBGCStateData        ;load new enemy state with old as offset
     addAToBC8_M
     LD A, (BC)
 SetD6Ste:
-    LD (HL), A
+    LD (HL), A                      ;set as new state
     ; FALL THROUGH
 
 ;--------------------------------
 ;$00 - used to store bitmask (not used but initialized here)
 ;$eb(IYH) - used in DoEnemySideCheck as counter and to compare moving directions
 
+; Was a loop that checked both directions (redundant because enemy can only face 1)
 DoEnemySideCheck:
-    LD L, <Enemy_Y_Position
-    LD A, (HL)
+    LD L, <Enemy_Y_Position         ;if enemy within status bar, branch to leave
+    LD A, (HL)                      ;because there's nothing there that impedes movement
     CP A, $20
     RET C
 ;
-    LD BC, $0014
-    ;LD C, $16
-;     LD IYH, $02
-; SdeCLoop:
-;     LD A, IYH
-;     LD L, <Enemy_MovingDir
-;     CP A, (HL)
-;     JP NZ, NextSdeC
-;     LD A, $01
-;     CALL BlockBufferChk_Enemy
-;     JP Z, NextSdeC
-;     CALL ChkForNonSolids
-;     JP NZ, ChkForBump_HammerBroJ
-; NextSdeC:
-;     DEC IYH
-;     INC C
-;     LD A, C
-;     CP A, $18
-;     JP C, SdeCLoop
-;     RET
-    LD L, <Enemy_MovingDir
+    LD BC, $0014                    ;start by finding block to the left of enemy ($00,$14)
+    LD L, <Enemy_MovingDir          ;check if enemy is moving left
     LD A, (HL)
     DEC A
-    JP NZ, RightChk
-    LD B, $10   ; $1014
-    ;INC C
+    JP NZ, RightChk                 ;if so, jump
+    LD B, $10                       ;else, find block to the right of the enemy ($10,$14)
 RightChk:
-    ;LD A, $01
-    ;CALL BlockBufferChk_Enemy
-    CALL BlockBufferCollision_A1
-    RET Z
-    CALL ChkForNonSolids
-    RET Z
+    CALL BlockBufferCollision_A1    ;find block to left or right of enemy object
+    RET Z                           ;if nothing found, branch
+    CALL ChkForNonSolids            ;check for non-solid blocks
+    RET Z                           ;branch if not found
     ; FALL THROUGH
 
 ChkForBump_HammerBroJ:
-    LD A, H
+    LD A, H                         ;check if we're on the special use slot
     CP A, $C6
-    JP Z, NoBump
+    JP Z, NoBump                    ;and if so, branch ahead and do not play sound
 ;
-    LD L, <Enemy_State
-    LD A, (HL)
+    LD L, <Enemy_State              ;if enemy state d7 not set, branch
+    LD A, (HL)                      ;ahead and do not play sound
     ADD A, A
     JP NC, NoBump
-    LD A, SNDID_BUMP
+    LD A, SNDID_BUMP                ;otherwise, play bump sound
     LD (SFXTrack0.SoundQueue), A 
 NoBump:
-    LD L, <Enemy_ID
+    LD L, <Enemy_ID                 ;check for hammer bro
     LD A, (HL)
     CP A, $05
-    JP NZ, RXSpd
+    JP NZ, RXSpd                    ;branch if not found
     
-    LD A, H 
+    LD A, H                         ;store pseudo random address in BC
     SUB A, $C1
     LD BC, PseudoRandomBitReg+1
     addAToBC8_M
-    LD DE, $00FA
-    JP SetHJ
+    LD DE, $00FA                    ;load default vertical speed for jumping
+    JP SetHJ                        ;jump to code that makes hammer bro jump
 
 ;--------------------------------
 ;$00 - used to hold horizontal difference between player and enemy
-;IXL - temp reg
 
 PlayerEnemyDiff:
-    ; LD A, (Player_X_Position)
-    ; LD IXL, A
-    ; LD L, <Enemy_X_Position
-    ; LD A, (HL)
-    ; SUB A, IXL
-    ; LD (Temp_Bytes + $00), A
-    ; LD A, (Player_PageLoc)
-    ; LD IXL, A
-    ; DEC L ;LD L, <Enemy_PageLoc
-    ; LD A, (HL)
-    ; SBC A, IXL
-    EX DE, HL   ; DE = ENEMY, HL = PLAYER
+    EX DE, HL                       ; DE = ENEMY, HL = PLAYER
     LD HL, Player_X_Position
     LD E, L
-    LD A, (DE)
-    SUB A, (HL)
-    LD (Temp_Bytes + $00), A
-    DEC L                               ;Enemy_PageLoc
+    LD A, (DE)                      ;get distance between enemy object's
+    SUB A, (HL)                     ;horizontal coordinate and the player's
+    LD (Temp_Bytes + $00), A        ;and store here
+    DEC L                           ;Enemy_PageLoc
     DEC E
     LD A, (DE)
-    SBC A, (HL)
-    EX DE, HL   ; DE = PLAYER, HL = ENEMY
+    SBC A, (HL)                     ;subtract borrow, then leave
+    EX DE, HL                       ; DE = PLAYER, HL = ENEMY
     RET
 
 ;--------------------------------
 
 EnemyLanding:
-    CALL InitVStf
+    CALL InitVStf                   ;do something here to vertical speed and something else
     LD L, <Enemy_Y_Position
     LD A, (HL)
-    AND A, %11110000
-    OR A, %00001000
-    LD (HL), A
+    AND A, %11110000                ;save high nybble of vertical coordinate, and
+    OR A, %00001000                 ;set d3, then store, probably used to set enemy object
+    LD (HL), A                      ;neatly on whatever it's landing on
     RET
 
 EnemyJump:
 ;SubtEnemyYPos:
-    LD L, <Enemy_Y_Position
-    LD A, (HL)
+    LD L, <Enemy_Y_Position         ;add 62 pixels to enemy object's
+    LD A, (HL)                      ;vertical coordinate
     ADD A, $3E
-    CP A, $44
-    ;RET
+    CP A, $44                       ;compare against a certain range
 
-;EnemyJump:
-    ;CALL SubtEnemyYPos
-    JP C, DoEnemySideCheck
+    JP C, DoEnemySideCheck          ;if enemy vertical coord + 62 < 68, branch to leave
 ;
-    LD L, <Enemy_Y_Speed
+    LD L, <Enemy_Y_Speed            ;add two to vertical speed
     LD A, (HL)
     ADD A, $02
-    CP A, $03
+    CP A, $03                       ;if green paratroopa not falling, branch ahead
     JP C, DoEnemySideCheck
 ;
-    ChkUnderEnemy ;CALL ChkUnderEnemy
-    JP Z, DoEnemySideCheck
+    ChkUnderEnemy                   ;otherwise, check to see if green paratroopa is
+    JP Z, DoEnemySideCheck          ;standing on anything, then branch to same place if not
 ;
-    CALL ChkForNonSolids
-    JP Z, DoEnemySideCheck
+    CALL ChkForNonSolids            ;check for non-solid blocks
+    JP Z, DoEnemySideCheck          ;branch if found
 ;
-    CALL EnemyLanding
-    LD L, <Enemy_Y_Speed
+    CALL EnemyLanding               ;change vertical coordinate and speed
+    LD L, <Enemy_Y_Speed            ;make the paratroopa jump again
     LD (HL), $FD
-    JP DoEnemySideCheck
+    JP DoEnemySideCheck             ;check for horizontal blockage, then leave
 
 ;--------------------------------
 
 HammerBroBGColl:
-    ChkUnderEnemy ;CALL ChkUnderEnemy
+    ChkUnderEnemy                   ;check to see if hammer bro is standing on anything
     JP Z, NoUnderHammerBro
-    CP A, MT_HITBLANK
+    CP A, MT_HITBLANK               ;check for blank metatile $23 and branch if not found
     JP NZ, UnderHammerBro
+    ; FALL THROUGH
 
 KillEnemyAboveBlock:
-    CALL ShellOrBlockDefeat
-    LD L, <Enemy_Y_Speed
+    CALL ShellOrBlockDefeat         ;do this sub to kill enemy
+    LD L, <Enemy_Y_Speed            ;alter vertical speed of enemy and leave
     LD (HL), $FC
     RET
 
 UnderHammerBro:
-    LD A, H
+    LD A, H                         ;check timer used by hammer bro
     SUB A, $C1
     LD BC, EnemyFrameTimer
     addAToBC8_M
     LD A, (BC)
     OR A
-    JP NZ, NoUnderHammerBro
+    JP NZ, NoUnderHammerBro         ;branch if not expired
 ;
-    LD L, <Enemy_State
+    LD L, <Enemy_State              ;save d7 and d3 from enemy state, nullify other bits
     LD A, (HL)
     AND A, %10001000
-    LD (HL), A
+    LD (HL), A                      ;and store
 ;
-    CALL EnemyLanding
-    JP DoEnemySideCheck
+    CALL EnemyLanding               ;modify vertical coordinate, speed and something else
+    JP DoEnemySideCheck             ;then check for horizontal blockage and leave
 
 NoUnderHammerBro:
-    LD L, <Enemy_State
-    SET 0, (HL)
+    LD L, <Enemy_State              ;if hammer bro is not standing on anything, set d0
+    SET 0, (HL)                     ;in the enemy state to indicate jumping or falling, then leave
     RET
 
 ; ChkUnderEnemy:
@@ -8354,15 +8317,15 @@ NoUnderHammerBro:
 ;     JP BlockBufferChk_Enemy
 
 ChkForNonSolids:
-    CP A, MT_VINEBLANK
+    CP A, MT_VINEBLANK              ;blank metatile used for vines?
     RET Z
-    CP A, MT_COIN
+    CP A, MT_COIN                   ;regular coin?
     RET Z
-    CP A, MT_WATERCOIN
+    CP A, MT_WATERCOIN              ;underwater coin?
     RET Z
-    CP A, MT_HIDDENBLK_COIN
+    CP A, MT_HIDDENBLK_COIN         ;hidden coin block?
     RET Z
-    CP A, MT_HIDDENBLK_1UP
+    CP A, MT_HIDDENBLK_1UP          ;hidden 1-up block?
     RET
     
 ;-------------------------------------------------------------------------------------
