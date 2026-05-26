@@ -1313,7 +1313,6 @@ BulletBillCheepCheep:
     CP A, $C4
     RET NC                              ;if so, branch to leave
 ;
-    LD A, H
     SUB A, $C1
     LD BC, PseudoRandomBitReg
     addAToBC8_M
