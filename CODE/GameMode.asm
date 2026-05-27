@@ -7271,14 +7271,14 @@ ChkOnScr:
     DEC A                               ;check player's vertical high byte for still on the screen
     RET NZ                              ;branch to leave if not
 ;
-    LD A, $FF                           ;initialize player's collision flag
+    DEC A                               ;initialize player's collision flag
     LD (Player_CollisionBits), A
 ;
     LD A, (Player_Y_Position)
     CP A, $CF                           ;if not too close to the bottom of screen, continue
     RET NC                              ;otherwise leave
 
-ChkCollSize:
+;ChkCollSize:
     LD BC, $0812                        ;load block offsets for crouching/small
     LD E, $10                           ;load height comparision for crouching/small
     LD A, (PlayerSize)
