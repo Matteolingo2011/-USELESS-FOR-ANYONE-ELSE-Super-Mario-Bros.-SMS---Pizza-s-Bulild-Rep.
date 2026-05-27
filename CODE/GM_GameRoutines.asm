@@ -750,17 +750,19 @@ DBlockSte:
 ;
     LD A, IXL
     addAToDE_M
+
+    LD A, (PlayerSize)              ;set carry if player is small
+    RRCA
+
     LD A, (DE)                      ;get contents of block buffer at old address at $06, $07
     CALL BlockBumpedChk             ;do a sub to check which block player bumped head on
 ;
     LD (Temp_Bytes + $00), A        ;store metatile here
-    LD C, A
-    LD A, (PlayerSize)              ;check player's size
-    BIT 0, A
-    JP NZ, ChkBrick                 ;if small, use metatile itself as contents of A
-    LD C, A                         ;otherwise init metatile
+    LD C, A                 
+    JP C, ChkBrick                  ;if player is small, use metatile itself as contents of A
+    LD C, MT_BLANK                  ;otherwise init metatile
 ChkBrick:
-    JP C, PutMTileB                 ;if no match was found in previous sub, skip ahead
+    JP NZ, PutMTileB                ;if no match was found in previous sub, skip ahead
 ;
     LD L, <Block_State              ;otherwise load unbreakable state into block object buffer
     LD (HL), $11                    ;note this applies to both player sizes
@@ -880,10 +882,9 @@ BumpBlock:
 ;
     LD A, (Temp_Bytes + $05)        ;get original metatile from stack
     CALL BlockBumpedChk             ;do a sub to check which block player bumped head on
-    RET C                           ;if no match was found, branch to leave
+    RET NZ                          ;if no match was found, branch to leave
 ;
-    LD A, B                         ;move block number to A
-    DEC A
+    LD A, C                         ;move block number to A
     CP A, $09                       ;if block number was within 0-8 range,
     JP C, BlockCode                 ;branch to use current number
     SUB A, $05                      ;otherwise subtract 5 for second set to get proper number
@@ -938,20 +939,14 @@ BrickQBlockMetatiles:
 .ENDS
 
 ;   INPUT:  A - METATILE
-;   OUTPUT: NC - BLOCK FOUND, C - BLOCK NOT FOUND
+;   OUTPUT: Z - BLOCK FOUND, NZ - BLOCK NOT FOUND
 BlockBumpedChk:
     LD DE, BrickQBlockMetatiles + $0D   ;start at end of metatile data
-    LD B, $0E
+    LD BC, $000E
     EX DE, HL
-BumpChkLoop:
-    CP A, (HL)                          ;check to see if current metatile matches
-    JP Z, MatchBump                     ;metatile found in block buffer, branch if so
-    DEC L                               ;otherwise move onto next metatile
-    DJNZ BumpChkLoop                    ;do this until all metatiles are checked
-    SCF                                 ;if none match, return with carry set
-MatchBump:
+    CPDR                                ;check to see if metatile matches any in table data
     EX DE, HL
-    RET                                 ;note carry is clear if found match
+    RET
     
 ;--------------------------------
 
