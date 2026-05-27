@@ -1900,7 +1900,7 @@ DrawBubble:
 ;-------------------------------------------------------------------------------------
 ;$00 - used to store player's vertical offscreen bits
 
-.SECTION "PlayerGraphicsTable" BANK BANK_PLAYERGFX00 SLOT 2 FORCE ORG $0F20 RETURNORG
+.SECTION "PlayerGraphicsTable [Mario, Right]" BANK BANK_PLAYERGFX00 SLOT 2 FORCE ORG $0F20 RETURNORG
 PlayerGraphicsTable:
 @bigWalk:
     .db $00, $01, $02, $03, $04, $05, $06, $07
@@ -1946,7 +1946,7 @@ PlayerGraphicsTable:
     .db $44, $44, $73, $74, $75, $76, $77, $78  ; $C8
 .ENDS
 
-.SECTION "PlayerGraphicsTable_HFLIP" BANK BANK_PLAYERGFX01 SLOT 2 FORCE ORG $0F20 RETURNORG
+.SECTION "PlayerGraphicsTable [Mario, Left]" BANK BANK_PLAYERGFX01 SLOT 2 FORCE ORG $0F20 RETURNORG
     ; BIG
     .db $00, $01, $02, $03, $04, $05, $06, $07
     .db $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
@@ -1989,6 +1989,98 @@ PlayerGraphicsTable:
     .db $44, $44, $44, $44, $6F, $70, $71, $72
 
     .db $44, $44, $73, $74, $75, $76, $77, $78
+.ENDS
+
+;--------------------------------
+
+.SECTION "PlayerGraphicsTable [Luigi, Right]" BANK BANK_PLAYERGFX02 SLOT 2 FORCE ORG $0F20 RETURNORG
+    ; BIG
+    .db $00, $01, $02, $03, $04, $05, $06, $07
+    .db $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
+    .db $10, $11, $12, $13, $14, $15, $16, $17
+
+    .db $10, $11, $12, $13, $14, $15, $16, $17
+
+    .db $18, $19, $1A, $1B, $1C, $1D, $1E, $1F
+
+    .db $00, $20, $02, $21, $04, $22, $06, $07
+
+    .db $10, $11, $23, $24, $25, $26, $27, $28
+    .db $10, $11, $29, $13, $2A, $2B, $2C, $2D
+    .db $10, $11, $29, $13, $2E, $2F, $30, $28
+
+    .db $10, $11, $31, $32, $33, $34, $35, $36
+    .db $37, $38, $39, $3A, $3B, $3C, $3D, $3E
+
+    .db $3F, $3F, $10, $11, $40, $41, $42, $43
+
+    .db $44, $45, $46, $47, $48, $49, $4A, $4B
+    ; SMALL
+    .db $3F, $3F, $3F, $3F, $4C, $4D, $4E, $4F
+    .db $3F, $3F, $3F, $3F, $50, $51, $52, $53
+    .db $3F, $3F, $3F, $3F, $50, $51, $54, $55
+
+    .db $3F, $3F, $3F, $3F, $50, $51, $54, $55
+
+    .db $3F, $3F, $3F, $3F, $56, $57, $58, $59
+
+    .db $3F, $3F, $3F, $3F, $5A, $5B, $5C, $5D
+
+    .db $3F, $3F, $3F, $3F, $5E, $5F, $60, $61
+    .db $3F, $3F, $3F, $3F, $5E, $5F, $62, $63
+    .db $3F, $3F, $3F, $3F, $64, $5F, $65, $66
+
+    .db $3F, $3F, $3F, $3F, $67, $68, $69, $6A
+    .db $3F, $3F, $3F, $3F, $50, $51, $6B, $6C
+
+    .db $3F, $3F, $3F, $3F, $6D, $6E, $6F, $70
+
+    .db $3F, $3F, $37, $38, $71, $72, $73, $74
+.ENDS
+
+.SECTION "PlayerGraphicsTable [Luigi, Left]" BANK BANK_PLAYERGFX03 SLOT 2 FORCE ORG $0F20 RETURNORG
+    ; BIG
+    .db $00, $01, $02, $03, $04, $05, $06, $07
+    .db $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
+    .db $10, $11, $12, $13, $14, $15, $16, $17
+
+    .db $10, $11, $12, $13, $14, $15, $16, $17
+
+    .db $18, $19, $1A, $1B, $1C, $1D, $1E, $1F
+
+    .db $20, $01, $21, $03, $22, $05, $06, $07
+
+    .db $10, $11, $23, $24, $25, $26, $27, $28
+    .db $10, $11, $12, $29, $2A, $2B, $2C, $2D
+    .db $10, $11, $12, $29, $2E, $2F, $27, $30
+
+    .db $10, $11, $31, $32, $33, $34, $35, $36
+    .db $37, $38, $39, $3A, $3B, $3C, $3D, $3E
+
+    .db $3F, $3F, $10, $11, $40, $41, $42, $43
+
+    .db $44, $45, $46, $47, $48, $49, $4A, $4B
+    ; SMALL
+    .db $3F, $3F, $3F, $3F, $4C, $4D, $4E, $4F
+    .db $3F, $3F, $3F, $3F, $50, $51, $52, $53
+    .db $3F, $3F, $3F, $3F, $50, $51, $54, $55
+
+    .db $3F, $3F, $3F, $3F, $50, $51, $54, $55
+
+    .db $3F, $3F, $3F, $3F, $56, $57, $58, $59
+
+    .db $3F, $3F, $3F, $3F, $5A, $5B, $5C, $5D
+
+    .db $3F, $3F, $3F, $3F, $5E, $5F, $60, $61
+    .db $3F, $3F, $3F, $3F, $5E, $5F, $62, $63
+    .db $3F, $3F, $3F, $3F, $5E, $64, $65, $66
+
+    .db $3F, $3F, $3F, $3F, $67, $68, $69, $6A
+    .db $3F, $3F, $3F, $3F, $50, $51, $6B, $6C
+
+    .db $3F, $3F, $3F, $3F, $6D, $6E, $6F, $70
+
+    .db $3F, $3F, $37, $38, $71, $72, $73, $74
 .ENDS
 
 ;--------------------------------
@@ -2326,6 +2418,8 @@ DrawPlayer_Intermediate:
 ;
     LD HL, PlayerGraphicsTable@smlStand ;load offset for small standing
     LD (PlayerGfxOffset), HL
+    INC L                               ;invalidate old offset to force tile streaming for player
+    LD (PlayerGfxOffset_Old), HL
 ;
     LD HL, PlayerFixedTiles             ;load fixed tile indexes allocated for streamed player tiles
     LD DE, Sprite_Y_Position + $01      ;load sprite data offset

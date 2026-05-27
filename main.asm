@@ -2740,11 +2740,37 @@ Pal_BG_Options:
 .ENDS
 
 ;-------------------------------------------------------------------------------------
-.SECTION "Uncompressed Player Tiles - Luigi [Left]" BANK BANK_PLAYERGFX02 SLOT 2 FREE
+.SECTION "Uncompressed Player Tiles - Luigi [Right, Palette 0]" BANK BANK_PLAYERGFX02 SLOT 2 FORCE ORG $0000
+.INCLUDE "SPR_Luigi00.inc"
+.ENDS
+
+.SECTION "Uncompressed Player Tiles - Luigi [Right, Palette 1]" BANK BANK_PLAYERGFX02 SLOT 2 FORCE ORG $1000
+.INCLUDE "SPR_Luigi01.inc"
+.ENDS
+
+.SECTION "Uncompressed Player Tiles - Luigi [Right, Palette 2]" BANK BANK_PLAYERGFX02 SLOT 2 FORCE ORG $2000
+.INCLUDE "SPR_Luigi02.inc"
+.ENDS
+
+.SECTION "Uncompressed Player Tiles - Luigi [Right, Palette 3]" BANK BANK_PLAYERGFX02 SLOT 2 FORCE ORG $3000
+.INCLUDE "SPR_Luigi03.inc"
 .ENDS
 
 ;-------------------------------------------------------------------------------------
-.SECTION "Uncompressed Player Tiles - Luigi [Right]" BANK BANK_PLAYERGFX03 SLOT 2 FREE
+.SECTION "Uncompressed Player Tiles - Luigi [Left, Palette 0]" BANK BANK_PLAYERGFX03 SLOT 2 FORCE ORG $0000
+.INCLUDE "SPR_Luigi10.inc"
+.ENDS
+
+.SECTION "Uncompressed Player Tiles - Luigi [Left, Palette 1]" BANK BANK_PLAYERGFX03 SLOT 2 FORCE ORG $1000
+.INCLUDE "SPR_Luigi11.inc"
+.ENDS
+
+.SECTION "Uncompressed Player Tiles - Luigi [Left, Palette 2]" BANK BANK_PLAYERGFX03 SLOT 2 FORCE ORG $2000
+.INCLUDE "SPR_Luigi12.inc"
+.ENDS
+
+.SECTION "Uncompressed Player Tiles - Luigi [Left, Palette 3]" BANK BANK_PLAYERGFX03 SLOT 2 FORCE ORG $3000
+.INCLUDE "SPR_Luigi13.inc"
 .ENDS
 
 .INCDIR "ASSETS/NES"
