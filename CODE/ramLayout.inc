@@ -664,6 +664,90 @@
 .ENDS
 
 ;-------------------------------------------------------------------------------------
+.RAMSECTION "RAM Page 10" SLOT 19
+    .                               dsb $19 ; UNUSED
+    HammerEnemyOffset_03:           dsb $01 ; [9]
+    Misc_Collision_Flag_03:         dsb $01 ; [9]
+    Misc_State_03:                  dsb $01 ; [9]
+    ; $1C
+    .                               dsb $0E ; MISC 3...
+    ; $2A
+    .                               dsb $03 ; UNUSED
+    ; $2D
+    Misc_SprDataOffset_01:          dsb $01 ; [$17] *
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.RAMSECTION "RAM Page 11" SLOT 20
+    .                               dsb $19 ; UNUSED
+    HammerEnemyOffset_04:           dsb $01 ; [9]
+    Misc_Collision_Flag_04:         dsb $01 ; [9]
+    Misc_State_04:                  dsb $01 ; [9]
+    ; $1C
+    .                               dsb $0E ; MISC 4...
+    ; $2A
+    .                               dsb $03 ; UNUSED
+    ; $2D
+    Misc_SprDataOffset_02:          dsb $01 ; [$17] *
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.RAMSECTION "RAM Page 12" SLOT 21
+    .                               dsb $19 ; UNUSED
+    HammerEnemyOffset_05:           dsb $01 ; [9]
+    Misc_Collision_Flag_05:         dsb $01 ; [9]
+    Misc_State_05:                  dsb $01 ; [9]
+    ; $1C
+    .                               dsb $0E ; MISC 5...
+    ; $2A
+    .                               dsb $03 ; UNUSED
+    ; $2D
+    Misc_SprDataOffset_03:          dsb $01 ; [$17] *
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.RAMSECTION "RAM Page 13" SLOT 22
+    .                               dsb $19 ; UNUSED
+    HammerEnemyOffset_06:           dsb $01 ; [9]
+    Misc_Collision_Flag_06:         dsb $01 ; [9]
+    Misc_State_06:                  dsb $01 ; [9]
+    ; $1C
+    .                               dsb $0E ; MISC 6...
+    ; $2A
+    .                               dsb $03 ; UNUSED
+    ; $2D
+    Misc_SprDataOffset_04:          dsb $01 ; [$17] *
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.RAMSECTION "RAM Page 14" SLOT 23
+    .                               dsb $19 ; UNUSED
+    HammerEnemyOffset_07:           dsb $01 ; [9]
+    Misc_Collision_Flag_07:         dsb $01 ; [9]
+    Misc_State_07:                  dsb $01 ; [9]
+    ; $1C
+    .                               dsb $0E ; MISC 7...
+    ; $2A
+    .                               dsb $03 ; UNUSED
+    ; $2D
+    Misc_SprDataOffset_05:          dsb $01 ; [$17] *
+.ENDS
+
+;-------------------------------------------------------------------------------------
+.RAMSECTION "RAM Page 15" SLOT 24
+    .                               dsb $19 ; UNUSED
+    HammerEnemyOffset_08:           dsb $01 ; [9]
+    Misc_Collision_Flag_08:         dsb $01 ; [9]
+    Misc_State_08:                  dsb $01 ; [9]
+    ; $1C
+    .                               dsb $0E ; MISC 8...
+    ; $2A
+    .                               dsb $03 ; UNUSED
+    ; $2D
+    Misc_SprDataOffset_06:          dsb $01 ; [$17] *
+.ENDS
+
+;-------------------------------------------------------------------------------------
 .RAMSECTION "RAM Page 16" SLOT 25
     .                               dsb $1C ; UNUSED
     ; $1C
@@ -728,12 +812,6 @@
 
 ;-------------------------------------------------------------------------------------
 .RAMSECTION "RAM Page 1E" SLOT 33
-    ;VRAM_Buffer2:                   dsb $BB ; (23 * 2) * 4 + 3
-    ;VRAM_Buffer2_Ptr:               dsb $02
-    ;VRAM_Buffer1_Ptr:               dsb $02    
-    ;AreaData:                       dsb $02
-    ;EnemyData:                      dsb $02
-
     RetainerDrawnFlag:              dsb $01
     PauseButtonFlag:                dsb $01
     BlockBufferColumnPos:           dsb $01

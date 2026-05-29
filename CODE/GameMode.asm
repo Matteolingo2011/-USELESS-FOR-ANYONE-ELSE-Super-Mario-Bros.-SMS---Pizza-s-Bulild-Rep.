@@ -5612,7 +5612,7 @@ JCoinC:
 
 FindEmptyMiscSlot:
     LD C, $03
-    LD DE, Misc_State + ($08 * $100)    ;start at end of misc objects buffer
+    LD DE, Misc_State_08                ;start at end of misc objects buffer
 FMiscLoop:
     LD A, (DE)                          ;get misc object state
     OR A
