@@ -330,7 +330,7 @@ SFX_Shatter:
 .SECTION "SFX Data - Swim, Stomp" BANK BANK_SOUND SLOT 2 FREE
 SFX_Swim:
     smpsChanHeader  SFX_Swim + 6,           $00 $00 $00 $04
-    smpsModSetup    $01, $01, $F8, $FF
+    smpsModSetup    $01, $01, $F7, $FF
     .db nA2, $05
     .db nRst, $03
     .db nF3, $06
