@@ -217,13 +217,14 @@ AreaParserTaskControl:
     LD (DisableScreenFlag), A
 TaskLoop:
     CALL AreaParserTaskHandler      ;render column set of current area
+    LD A, (AreaParserTaskNum)
+    OR A
+    JP NZ, TaskLoop
     LD HL, ColumnSets               ;do we need to render more column sets?
     DEC (HL)
     RET P
     LD HL, ScreenRoutineTask        ;if not, move on to the next task
     INC (HL)
-    LD A, <VRAM_ADR_NAMETBL + $42
-    LD (CurrentNTAddr), A
     JP LoadLevelTileData
 
 ;-------------------------------------------------------------------------------------

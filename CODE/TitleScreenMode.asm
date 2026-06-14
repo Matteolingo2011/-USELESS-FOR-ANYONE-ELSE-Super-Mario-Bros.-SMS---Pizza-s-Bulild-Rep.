@@ -223,7 +223,7 @@ DrawMushroomIcon:
     INC L
 
     LD A, (OptionBitflags)          ;use spr palette for default, bg palette for NES
-    OR A
+    AND A, $01
     LD A, $08
     JP Z, +
     XOR A

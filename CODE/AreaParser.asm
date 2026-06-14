@@ -1,23 +1,36 @@
 ;-------------------------------------------------------------------------------------
  
 AreaParserTaskHandler:
-    LD A, (ColumnSide)                  ;only run if processing left side of metatile
+    LD A, (AreaParserTaskNum)
     OR A
-    CALL Z, AreaParserCore              ;decode next metatile column from level data (only on left side processing)
-    LD A, (ColumnSets)                  ;only run if on visible screen when first loading a level
-    CP A, $0E
-    CALL NC, RenderAreaGraphics         ;render either left or right side of metatile column
-    ; FALL THROUGH
+    JP NZ, DoAPTasks
+    LD A, $08
+    LD (AreaParserTaskNum), A
+DoAPTasks:
+    DEC A
+    CALL AreaParserTasks
+    LD HL, AreaParserTaskNum
+    DEC (HL)
+    RET NZ
+    LD A, VRAMTBL_BUFFER2
+    LD (VRAM_Buffer_AddrCtrl), A
+    RET
+
+AreaParserTasks:
+    RST JumpEngine
+
+    .dw IncrementColumnPos
+    .dw RenderAreaGraphics
+    .dw RenderAreaGraphics
+    .dw AreaParserCore
+    .dw IncrementColumnPos
+    .dw RenderAreaGraphics
+    .dw RenderAreaGraphics
+    .dw AreaParserCore
 
 ;-------------------------------------------------------------------------------------
 
 IncrementColumnPos:
-    LD HL, ColumnSide
-    LD A, (HL)
-    XOR A, %00000001
-    LD (HL), A
-    RET NZ
-;
     LD HL, CurrentColumnPos     ;increment column where we're at
     LD A, (HL)
     INC A
@@ -400,22 +413,6 @@ EndUChk:
     JP TerrLoop                     ;unconditional branch, use Y to load next byte
 RendBBuf:
     CALL ProcessAreaData            ;do the area data loading routine now
-
-;   WRITE DELAYED GRAPHIC BUFFER
-    LD HL, MetatileBuffer
-    LD D, >MetaTileBuffer_EX
-    LD A, (MetaTileBuffer_EXOffset)
-    ADD A, <MetaTileBuffer_EX
-    LD E, A
-    LD BC, $0C
-    LDIR
-    LD A, (MetaTileBuffer_EXOffset)
-    ADD A, $0C
-    CP A, _sizeof_MetaTileBuffer_EX
-    JP NZ, +
-    XOR A
-+:
-    LD (MetaTileBuffer_EXOffset), A
 ;   WRITE BLOCK BUFFER (COLLISION DATA)
     LD A, (BlockBufferColumnPos)
 
@@ -2299,24 +2296,24 @@ MetatileGraphics:
 .ENDS
 
 RenderAreaGraphics:
-;   USE MetatileBuffer when first loading a level, use MetaTileBuffer_EX otherwise
     LD BC, MetatileBuffer-1
-    OR A
+    LD A, (ColumnSets)
+    CP A, $04
+    LD HL, (VRAM_Buffer2_Ptr)
     JP P, +
-    LD B, >MetaTileBuffer_EX
-    LD A, (MetaTileBuffer_EXOffset)
-    ADD A, <MetaTileBuffer_EX-1
-    LD C, A
+    LD HL, (ColumnUpdate_Ptr)
 +:
 ;   SET INITIAL ADDRESS AND COUNT FOR BUFFER
-    LD HL, VRAM_Buffer2
     LD DE, (CurrentNTAddr)              ;get current name table address we're supposed to render
     LD (HL), D                          ;write high byte
     INC L
     LD (HL), E                          ;write low byte
+;
     EX DE, HL
 ;   CALCULATE OFFSET FOR DRAWING EITHER LEFT OR RIGHT SIDE OF METATILE
-    LD A, (ColumnSide)                  ;get the correct column position in the metatile,
+    LD A, (AreaParserTaskNum)
+    CPL
+    AND A, %00000001
     ADD A, A                            ;then add to the tile offset so we can draw either side
     LD IXL, A                           ;of the metatiles
 ;
@@ -2364,6 +2361,10 @@ DrawMTLoop:
     DEC IXH
     JP NZ, DrawMTLoop                   ;if not there yet, loop back
     ;
+    DEC E
+    XOR A
+    LD (DE), A
+    ;
     LD HL, CurrentNTAddr                ;increment name table address low
     INC (HL)
     INC (HL)
@@ -2374,6 +2375,19 @@ DrawMTLoop:
 SetVRAMCtrl:
     LD A, VRAMTBL_BUFFER2
     LD (VRAM_Buffer_AddrCtrl), A
+
+    LD A, D
+    CP A, >VRAM_Buffer2
+    JP NZ, +
+    LD (VRAM_Buffer2_Ptr), DE
+    RET
++:
+    LD HL, ColumnUpdate_Ptr + $01
+    INC (HL)
+    LD A, (HL)
+    CP A, >ColumnBuffer_0F + $01
+    RET NZ
+    LD (HL), >ColumnBuffer
     RET
 
 ;-------------------------------------------------------------------------------------
@@ -2485,6 +2499,7 @@ GetAreaDataAddrs:
     CP A, %00000011                 ;if set to 3, store here
     JP NZ, @StoreStyle              ;and nullify other value
     LD (CloudTypeOverride), A       ;otherwise store value in other place
+    LD (BonusAreaFlag), A
     XOR A
 @StoreStyle:
     LD (AreaStyle), A
@@ -2526,6 +2541,15 @@ GetAreaDataAddrs:
 ;   Restore bank
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
+;   set bonus area flag for underground coin room (FM only)
+    LD A, (OptionBitflags)
+    AND A, %00000010
+    RET Z
+    LD A, (AreaPointer)
+    AND A, $7F
+    CP A, $42
+    RET NZ
+    LD (BonusAreaFlag), A
     RET
 
 

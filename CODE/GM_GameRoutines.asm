@@ -33,8 +33,6 @@ AltYPosOffset:
 PlayerStarting_Y_Pos:
     .db $00, $20, $b0, $50, $00, $00, $b0, $b0
     .db $f0
-    ;.db $E8, $08, $98, $38, $E8, $E8, $98, $98
-    ;.db $D8
 .ENDS
 
 .SECTION "Player Priority TBL & Game Timer TBL" BANK BANK_SLOT2 SLOT 2 FREE BITWINDOW 8 RETURNORG
@@ -47,6 +45,9 @@ GameTimerData:
 .ENDS
 
 Entrance_GameTimerSetup:
+    LD A, $08
+    LD (ScrollEight), A
+;
     LD A, (ScreenLeft_PageLoc)          ;set current page for area objects
     LD (Player_PageLoc), A              ;as page location for player
 ;
@@ -221,7 +222,6 @@ VerticalPipeEntry:
     INC C
     JP ChgAreaPipe                      ;otherwise use mode 2
 
-;   MOVETHIS??
 MovePlayerYAxis:
     LD HL, Player_Y_Position            ;add contents of A to player position
     ADD A, (HL)

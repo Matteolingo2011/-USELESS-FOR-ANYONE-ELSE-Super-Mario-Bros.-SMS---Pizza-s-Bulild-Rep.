@@ -72,6 +72,8 @@
     ;VRAM_Buffer2:                   dsb $D2 ; (23 * 2) * 4 + 3 == $BB
     VRAM_Buffer1_Ptr:               dsb $02
     VRAM_Buffer1:                   dsb $80
+    ColumnWrite_Ptr:                dsb $02
+    ColumnUpdate_Ptr:               dsb $02
 .ENDS
 
 .DEFINE Player_X_Speed              SprObject_X_Speed
@@ -191,6 +193,8 @@
     .                               dsb $06
     ; $40
     MusicTrack0                     INSTANCEOF SndTrack
+    ;
+    ColumnBuffer:                   dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -251,6 +255,7 @@
     .                               dsb $06
     ; $40
     MusicTrack1                     INSTANCEOF SndTrack
+    ColumnBuffer_01:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -310,6 +315,7 @@
     .                               dsb $06
     ; $40
     MusicTrack2                     INSTANCEOF SndTrack
+    ColumnBuffer_02:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -366,6 +372,7 @@
     .                               dsb $06
     ; $40
     MusicTrack3                     INSTANCEOF SndTrack
+    ColumnBuffer_03:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -422,6 +429,7 @@
     .                               dsb $06
     ; $40
     SFXTrack0                       INSTANCEOF SndTrack
+    ColumnBuffer_04:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -478,6 +486,7 @@
     .                               dsb $06
     ; $40
     SFXTrack1                       INSTANCEOF SndTrack
+    ColumnBuffer_05:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -511,6 +520,7 @@
     .                               dsb $06
     ; $40
     SFXTrack2                       INSTANCEOF SndTrack
+    ColumnBuffer_06:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -533,6 +543,8 @@
     
     .                               dsb $06
     ; $40
+    FMTrack0                        INSTANCEOF SndTrack
+    ColumnBuffer_07:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;.DEFINE Alt_SprDataOffset           Block_SprDataOffset
@@ -564,6 +576,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Block_SprDataOffset_01:         dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack1                        INSTANCEOF SndTrack
+    ColumnBuffer_08:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -579,6 +602,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Bubble_SprDataOffset:           dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack2                        INSTANCEOF SndTrack
+    ColumnBuffer_09:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -594,6 +628,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Bubble_SprDataOffset_01:        dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack3                        INSTANCEOF SndTrack
+    ColumnBuffer_0A:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -609,6 +654,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Bubble_SprDataOffset_02:        dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack4                        INSTANCEOF SndTrack
+    ColumnBuffer_0B:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -633,6 +689,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     FBall_SprDataOffset:            dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack5                        INSTANCEOF SndTrack
+    ColumnBuffer_0C:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -647,6 +714,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     FBall_SprDataOffset_01:         dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack6                        INSTANCEOF SndTrack
+    ColumnBuffer_0D:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -661,6 +739,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Misc_SprDataOffset:             dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack7                        INSTANCEOF SndTrack
+    ColumnBuffer_0E:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -675,6 +764,17 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Misc_SprDataOffset_01:          dsb $01 ; [$17] *
+    ; $2E
+    .                               dsb $07
+    ; $35
+    .                               dsb $04
+    ; $39
+    .                               dsb $01
+    
+    .                               dsb $06
+    ; $40
+    FMTrack8                        INSTANCEOF SndTrack
+    ColumnBuffer_0F:                dsb $30 ; VDP ADDRESS + 23 WORDS
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -745,6 +845,10 @@
     .                               dsb $03 ; UNUSED
     ; $2D
     Misc_SprDataOffset_06:          dsb $01 ; [$17] *
+    ;
+    VRAM_Buffer2_Ptr:               dsb $02
+    VRAM_Buffer2:                   dsb $C1 ; (23 * 2) * 4 + 3 == $BB
+    ; (VDP ADDRESS + 23 WORDS) * 4 + TERMINATOR
 .ENDS
 
 ;-------------------------------------------------------------------------------------
@@ -767,8 +871,8 @@
     ; $2D
     Misc_SprDataOffset_07:          dsb $01 ; [$17] *
     ; $2E
-    MetaTileBuffer_EXOffset:        dsb $01
-    MetaTileBuffer_EX:              dsb $60 ; $0C * $08
+    ;MetaTileBuffer_EXOffset:        dsb $01
+    ;MetaTileBuffer_EX:              dsb $60 ; $0C * $08
     ;
     ; 9 bytes per entry (VDP ADDRESS, COUNT, TILE ADDRESS, CURRENT COUNT)
     BGTileQueue0                    INSTANCEOF _AnimatedBGTileQueue
@@ -802,8 +906,8 @@
 ;-------------------------------------------------------------------------------------
 .RAMSECTION "RAM Page 1D" SLOT 32
     Sprite_Y_Position:              dsb $40
-    ;VRAM_Buffer1:                   dsb $40
-    VRAM_Buffer2:                   dsb $40 ;only uses $30 bytes (23 * 2) + 2
+    ;VRAM_Buffer2:                   dsb $40 ;only uses $30 bytes (23 * 2) + 2
+    .                               dsb $40
     Sprite_X_Position:              dsb $80 ;actually holds X Pos & Tile ID
 .ENDS
 
@@ -812,6 +916,7 @@
 
 ;-------------------------------------------------------------------------------------
 .RAMSECTION "RAM Page 1E" SLOT 33
+    BonusAreaFlag:                  dsb $01
     RetainerDrawnFlag:              dsb $01
     PauseButtonFlag:                dsb $01
     BlockBufferColumnPos:           dsb $01
@@ -877,9 +982,8 @@
     ScreenRight_X_Pos:              dsb $01
 
     ColumnSets:                     dsb $01
-    ColumnSide:                     dsb $01
     AreaParserTaskNum:              dsb $01
-    Scroll32Counter:                dsb $01
+    RenderColumnFlag:               dsb $01
 
     CurrentNTAddr:                  dsb $02 ; ptr
     Sprite0HitDetectFlag:           dsb $01
@@ -900,6 +1004,7 @@
     EnemyObjectPageSel:             dsb $01
     ScreenRoutineTask:              dsb $01
     ScrollThirtyTwo:                dsb $01
+    ScrollEight:                    dsb $01
     HorizontalScroll:               dsb $01
     ;VerticalScroll:                 dsb $01
     VDPHScroll:                     dsb $01
@@ -1032,6 +1137,7 @@
     OptionBitflags:                 dsb $01
     AnimateRoutine:                 dsb $02
     BowserDrawRoutine:              dsb $02
+    MusicRoutine:                   dsb $02
 ;
     FrameDoneFlag:                  dsb $01
 ;
@@ -1045,4 +1151,8 @@
     .                               dsb $04 ; SPARE SOUND MEM
 ;
     SpritePaletteCopy:              dsb $10
+;
+    MemoryControlValue:             dsb $01
+    FMDetectedFlag:                 dsb $01
+    SndFreqTablePtr:                dsb $02
 .ENDS

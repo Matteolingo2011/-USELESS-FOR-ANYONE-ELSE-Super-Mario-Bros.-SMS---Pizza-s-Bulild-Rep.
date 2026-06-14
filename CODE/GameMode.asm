@@ -23,6 +23,11 @@ InitializeArea:
     LD (HL), $00
     LDIR
 ;
+    LD HL, ColumnBuffer
+    LD (ColumnUpdate_Ptr), HL
+    DEC H
+    LD (ColumnWrite_Ptr), HL
+;
     LD A, (AltEntranceControl)
     OR A
     LD A, (HalfwayPage)             ;if AltEntranceControl not set, use halfway page, if any found
@@ -47,13 +52,9 @@ InitializeArea:
     DEC (HL)
     INC H
     DEC (HL)
-
     INC H
     DEC (HL)
-
-    LD A, $2E   ; $2F
-    ;LD A, $20                       ;"ColumnSets" is now more like the amount of columns drawn to the screen in tiles (NOT METATILES)
-    ;LD A, $0B                       ;set value for renderer to update 12 column sets
+    LD A, $0B                       ;set value for renderer to update 12 column sets
     LD (ColumnSets), A              ;12 column sets = 24 metatile columns = 1 1/2 screens
     CALL GetAreaDataAddrs           ;get enemy and level addresses and load header
     LD A, (PrimaryHardMode)         ;check to see if primary hard mode has been activated
@@ -89,14 +90,11 @@ InitializeArea:
 SecondaryGameSetup:
     LD A, $40
     LD (DisableScreenFlag), A           ;enable screen output
-;   !!! THIS CLEARS WAY MORE STUFF THAN JUST THE VRAM BUFFERS !!!
-    /*
-    LD HL, VRAM_Buffer1_Offset          ;clear buffer at $0300-$03ff
-    LD DE, VRAM_Buffer1_Offset + $01
-    LD BC, $00FF
-    LD (HL), A
-    LDIR
-    */
+    ; LD HL, VRAM_Buffer1_Offset          ;clear buffer at $0300-$03ff
+    ; LD DE, VRAM_Buffer1_Offset + $01  ;   !!! THIS CLEARS WAY MORE STUFF THAN JUST THE VRAM BUFFERS !!!
+    ; LD BC, $00FF
+    ; LD (HL), A
+    ; LDIR
     LD HL, VRAM_Buffer1
     LD (VRAM_Buffer1_Ptr), HL
     LD DE, VRAM_Buffer1 + $01
@@ -108,7 +106,6 @@ SecondaryGameSetup:
     LD BC, _sizeof_VRAM_Buffer2 - 1
     LD (HL), $00
     LDIR
-;   !!!
     XOR A
     LD (GameTimerExpiredFlag), A        ;clear game timer exp flag
     LD (DisableIntermediate), A         ;clear skip lives display flag
@@ -265,30 +262,32 @@ UpdScrollVar:
     CP A, VRAMTBL_BUFFER2                   ;if vram address controller set to VRAM_Buffer2
     RET Z                                   ;then branch to leave
 ;
-    LD HL, AreaParserTaskNum                ;check if AP task number is 0
-    LD A, (HL)
+    LD A, (AreaParserTaskNum)
     OR A
-    JP Z, CheckScrollEight                  ;if so, skip
-    DEC (HL)                                ;else, decrement it (it's not actually used for area parsing)
-;
-CheckScrollEight:
-    LD HL, ScrollThirtyTwo                  ;get horizontal scroll in 0-7 range
-    LD A, (HL)                              ;check to see if exceeded $08
-    SUB A, $08  ;   $20, $08
-    RET M                                   ;branch to leave if not
-    LD (HL), A                              ;else, store new scroll value
-;
-    LD HL, Scroll32Counter                  ;increment counter
-    INC (HL)
-    LD A, (HL)                              ;mod by 4 and check if result is 0
-    AND A, $03
-    LD (HL), A
-    JP NZ, AreaParserTaskHandler            ;if not, don't touch AreaParserTaskNum
-    LD A, $07                               ;else, set it to $07
-    LD (AreaParserTaskNum), A               ;will be set every 4 times AreaParserTaskHandler is called (since it's called every 8 scrolled pixels instead of 32)
-;
-    JP AreaParserTaskHandler                ;decode next column of level data
+    JP NZ, RunParser
+    LD A, (ScrollThirtyTwo)
+    SUB A, $20
+    JP M, CheckScrollEight
+    LD (ScrollThirtyTwo), A
+RunParser:
+    CALL AreaParserTaskHandler
+    ; FALL THROUGH
 
+CheckScrollEight:
+    LD A, (ScrollEight)
+    SUB A, $08
+    RET M
+    LD (ScrollEight), A
+    LD A, $01
+    LD (RenderColumnFlag), A
+    ;
+    LD HL, ColumnWrite_Ptr + $01
+    INC (HL)
+    LD A, (HL)
+    CP A, >ColumnBuffer_0F + $01
+    RET NZ
+    LD (HL), >ColumnBuffer
+    RET
 
 ;-------------------------------------------------------------------------------------
 
@@ -559,6 +558,11 @@ ScrollScreen:
     LD HL, ScrollThirtyTwo
     ADD A, (HL)                             ;add to value already set here
     LD (HL), A                              ;save as new value here
+;
+    LD A, C
+    LD HL, ScrollEight
+    ADD A, (HL)
+    LD (HL), A
 ;
     LD A, C
     LD HL, ScreenLeft_X_Pos
@@ -1464,7 +1468,6 @@ InitLCmd:
     XOR A                           ;initialize loop command flag
     LD (LoopCommand), A
     ; FALL THROUGH
-
 
 ;--------------------------------
 
@@ -4496,7 +4499,7 @@ DrawEraseRope:
     ;CPX $20
     ;BCS ExitRp
     CALL GetXOffscreenBits                      ;get offscreen bits for X coordinate
-    CP A, $E0                                   ;check if rope is offscreen
+    CP A, $C0                                   ;check if rope is offscreen (NOTE: 1 pixel off)
     LD DE, (VRAM_Buffer1_Ptr)                   ;get vram buffer offset
     JP NC, SkipRope1                            ;don't draw rope if it's offscreen
     LD L, <Enemy_Y_Position                     ;check if rope is vertically onscreen
@@ -4551,7 +4554,7 @@ SkipRope1:
     PUSH DE                                     ;preserve VRAM_Buffer1_Ptr
     CALL GetXOffscreenBits                      ;get offscreen bits for X coordinate
     POP DE                                      ;get back VRAM_Buffer1_Ptr
-    CP A, $E0                                   ;check if rope is offscreen
+    CP A, $C0                                   ;check if rope is offscreen (NOTE: 1 pixel off)
     JP NC, SkipRope2                            ;don't draw rope if it's offscreen
     LD L, <Enemy_Y_Position                     ;check if rope is vertically onscreen
     LD A, (HL)
@@ -4858,15 +4861,15 @@ OffscreenBoundsCheck:
     JP Z, LimitB
     CP A, OBJECTID_PiranhaPlant                 ;check for piranha plant object
     JP NZ, ExtendLB
-LimitB:
+LimitB:                                         ;6502 carry set (+1 to ADD)
     LD A, (ScreenLeft_X_Pos)                    ;get horizontal coordinate for left side of screen
-    ADD A, $39                                  ;add 56 pixels to coordinate if hammer bro or piranha plant (carry+1)
+    ADD A, $39                                  ;add 56 pixels to coordinate if hammer bro or piranha plant
     CCF                                         ;flip carry to convert 6502 logic to Z80
     SBC A, $48                                  ;subtract 72 pixels regardless of enemy object
     JP +
 ExtendLB:
     LD A, (ScreenLeft_X_Pos)                    ;get horizontal coordinate for left side of screen
-    SUB A, $49                                  ;subtract 72 pixels regardless of enemy object (carry+1)
+    SBC A, $48                                  ;subtract 72 pixels regardless of enemy object
 +:
     LD C, A                                     ;store result here
 ;
@@ -5409,8 +5412,15 @@ PutBlockMetatile:
     ADD A, <BlockGfxData
     LD C, A
 ;   PREPARE B TO CHECK IF OBJECT IS OFF THE LEFT EDGE OF THE VISIBLE SCREEN
-    LD A, (CurrentNTAddr)
-    SUB A, $02
+    ;LD A, (CurrentNTAddr)    
+    ;SUB A, $02
+    ;AND A, $3F
+    ;LD B, A
+    EXX
+    LD HL, (ColumnWrite_Ptr)
+    INC L
+    LD A, (HL)
+    EXX
     AND A, $3F
     LD B, A
 ;   CONVERT BLOCK BUFFER COLUMN TO NAMETABLE COLUMN
@@ -6597,9 +6607,12 @@ SetPRout:
 KillPlayer:
     LD (Player_X_Speed), A          ;halt player's horizontal movement by initializing speed
 ;
+    LD A, (OperMode)
+    OR A
+    JP Z, +
     LD A, SNDID_DEATH               ;set event music queue to death music
     LD (MusicTrack0.SoundQueue), A  ; EVENT
-;
++:
     LD A, $FC                       ;set new vertical speed
     LD (Player_Y_Speed), A
     LD A, $0B                       ;set subroutine to run on next frame

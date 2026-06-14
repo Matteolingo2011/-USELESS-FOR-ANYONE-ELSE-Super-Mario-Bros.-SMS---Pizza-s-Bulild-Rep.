@@ -2,7 +2,7 @@
 
 .DEFINE SINGLEPLAYERONLY        $00
 .DEFINE SHORTTIMER              $00
-.DEFINE NOINVALIDINPUTS         $00
+.DEFINE NOINVALIDINPUTS         $01
 .DEFINE PALBUILD                $00
 .DEFINE WORLDSELECT             $00
 
@@ -11,8 +11,12 @@
     ; IO
 .DEFINE CONTROLPORT1            $DC
 .DEFINE CONTROLPORT2            $DD
+.DEFINE MEM_CONTROL             $3E
 .DEFINE IO_CONTROL              $3F
 .DEFINE PSG_PORT                $7F
+.DEFINE OPLLREG_PORT            $F0
+.DEFINE OPLLDATA_PORT           $F1
+.DEFINE AUDIO_CONTROL           $F2
     ; VDP
 .DEFINE VDPLINE_PORT            $7E
 .DEFINE VDPCON_PORT             $BF
@@ -140,7 +144,7 @@
 .DEFINE BANK_PLAYERGFX05    $09 ; NES MARIO/LUIGI [LEFT]
 
 
-.DEFINE BANK_SOUND          $08
+.DEFINE BANK_SOUND          $0A
 
 .DEFINE SEMIFREEAREA        3/9/8
 
@@ -531,6 +535,12 @@
     StackPointer:   dsb $01
     .               dsb $06
     GoSubStack:     .dsb $01
+;---
+    PatchEnvelope:  db  ; ONLY FOR FM
+    PatchEnvIndex:  db  ; ONLY FOR FM
+    Instrument:     db  ; ONLY FOR FM
+    FinalFreqMSB:   db  ; ONLY FOR FM
+    FinalVolume:    db  ; ONLY FOR FM
 .ENDST
 
 ;   ----------------------------------

@@ -10,7 +10,7 @@ ProcessEnemyData:
     CP A, $FF                       ;check for EOD terminator
     JP Z, CheckFrenzyBuffer         ;if found, jump to check frenzy buffer, otherwise
 
-CheckEndofBuffer:
+;CheckEndofBuffer:
     AND A, %00001111                ;check for special row $0e
     CP A, $0E
     JP Z, CheckRightBounds          ;if found, branch, otherwise
@@ -1018,6 +1018,17 @@ InitBowser:
     DEC E
     LD (VRAM_Buffer1_Ptr), DE
     LD HL, (ObjectOffset)
+;
+    LD A, (OptionBitflags)              ;play boss music if doing FM sound
+    AND A, %00000010
+    RET Z
+    LD A, (WorldNumber)
+    CP A, WORLD8
+    LD A, SNDID_BOWSER_FM
+    JP NZ, +
+    INC A
++:
+    LD (MusicTrack0.SoundQueue), A
     RET
 
 .SECTION "Bowser Palette Data" BANK BANK_SLOT2 SLOT 2 FREE RETURNORG

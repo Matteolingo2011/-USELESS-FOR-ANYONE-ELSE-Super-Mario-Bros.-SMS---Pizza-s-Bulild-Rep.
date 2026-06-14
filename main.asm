@@ -38,6 +38,14 @@ BootVector:
 ;-------------------------------------------------------------------------------------|
 ;   USER VECTORS
 
+.ORG $0008
+ResetVector:
+    DI
+    LD SP, STACK_PTR
+    JP ResetStart
+    .db $00                     ; FILL
+
+
 ;   GIVEN A VALUE IN BOTH A AND HL, THE VALUE IN A WILL BE ADDED TO HL
 ;   INPUT: HL - VALUE, A - VALUE
 ;   OUTPUT: HL - HL + A, A - (HL + A)
@@ -59,13 +67,20 @@ addAToHL:
 ;   OUTPUT: HL - (VALUE)
 ;   USES: HL, A
 .ORG $0018
-getDataAtHL:
-    LD A, (HL)
-    INC HL
-    LD H, (HL)
-    LD L, A
+;getDataAtHL:
+    ; LD A, (HL)
+    ; INC HL
+    ; LD H, (HL)
+    ; LD L, A
+    ; RET
+SndFMWriteDelay:
+    PUSH HL
+    POP HL
+    PUSH HL
+    POP HL
     RET
     .db $00, $00, $00           ; FILL
+
 
 
 ;   INFO: GIVEN AN ADDRESS, SETS VDP ADDRESS TO IT
@@ -132,6 +147,46 @@ PauseBtnVector:
 ;-------------------------------------------------------------------------------------
 ;   MAIN PROGRAM START
 Start:
+;   CHECK FOR FM UNIT
+    ; STORE MEMORY CONTROL VALUE
+    LD A, ($C000)
+    LD (MemoryControlValue), A
+    ; DISABLE IO
+    OR A, %00000100
+    OUT (MEM_CONTROL), A
+    ; STORE CURRENT STATE OF AUDIO CONTROL PORT IN D
+    IN A, (AUDIO_CONTROL)
+    AND A, $03
+    LD D, A
+    ; 
+    LD BC, $0400
+-:
+    LD A, B
+    DEC A
+    LD E, A
+    OUT (AUDIO_CONTROL), A
+    IN A, (AUDIO_CONTROL)
+    AND A, $03
+    CP A, E
+    JP NZ, +
+    INC C
++:
+    DJNZ -
+    ; RESTORE AUDIO CONTROL PORT
+    LD A, D
+    OUT (AUDIO_CONTROL), A
+    ; REENABLE IO
+    LD A, (MemoryControlValue)
+    OUT (MEM_CONTROL), A
+    ; CHECK IF COUNTER IS 4 (ONLY JAPANESE SMS OR AFTERMARKET UNIT. MARK3 NOT ALLOWED DUE TO NO FM/PSG MIXING)
+    ;LD A, C
+    ;CP A, $04
+    ;LD A, $00
+    ;JP NZ, +
+    LD A, $01
++:
+    LD (FMDetectedFlag), A
+ResetStart:
 ;   TURN OFF SCREEN (AND DISABLE VDP INTS)
     CALL turnOffScreen
 ;   WAIT FOR VBLANK
@@ -167,6 +222,10 @@ Start:
     LD (IX + 3), $02    ; BANK SELECT FOR SLOT 2
 ;   MUTE PSG CHANNELS
     CALL SndStopAll@WritePSG
+;   MUTE FM CHANNELS IF FM CHIP IS DETECTED
+    LD A, (FMDetectedFlag)
+    OR A
+    CALL NZ, SndStopAllFM@WriteFM
 ;   RESET GRAPHIC & SOUND BITFLAGS
     XOR A
     LD (OptionBitflags), A
@@ -185,12 +244,26 @@ Start:
     LD HL, Pal_BG_Options
     LD BC, _sizeof_Pal_BG_Options * $100 + VDPDATA_PORT
     OTIR
+    ; DISPLAY SOUND SELECTION IF FM CHIP IS DETECTED
+    LD A, (FMDetectedFlag)
+    OR A
+    JP Z, +
+    LD HL, $2082 | VRAMWRITE
+    RST setVDPAddress
+    LD HL, Map_BG_SoundSelect
+    LD BC, _sizeof_Map_BG_SoundSelect * $100 + VDPDATA_PORT
+    OTIR
++:
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     ; INITIALIZE BASIC MEMORY
     LD HL, WarmBootOffset
     CALL InitializeMemory
-    LD A, $01
+    LD HL, SndChannelProcessMUS
+    LD (MusicRoutine), HL
+    XOR A
+    LD (SndPauseFlag), A
+    INC A
     LD (FrameDoneFlag), A
     LD (PlayerStatus), A
     LD (Player_X_Speed), A
@@ -215,7 +288,7 @@ Start:
 OptionsLoop:
     LD A, (Temp_Bytes + $01)        ;check if leaving options menu
     OR A
-    JP Z, OptionsCheckJoypad        ;if not, skip
+    JR Z, OptionsCheckJoypad        ;if not, skip
     LD A, (SFXTrack0.Control)       ;check if sfx has finished playing
     OR A
     JP P, MainGameInit              ;if so, go to main game
@@ -229,32 +302,54 @@ OptionsCheckJoypad:
     LD A, B
     LD (Temp_Bytes + $00), A
     LD A, (HL)
+    ; --- BUTTON UP/DOWN PROCESS ---
     AND A, $01 << SMS_BTN_UP | $01 << SMS_BTN_DOWN
-    JP Z, OptionCheckBtn1           ;if neither up or down is pressed, skip
+    JR Z, OptionCheckBtn1           ;if neither up or down is pressed, skip
     AND A, $01 << SMS_BTN_UP        ;check if up is pressed
     LD A, (OptionBitflags)          ;clear bit 0 of bit flags by default
     RES 0, A
-    JP NZ, +                        ;if so, skip
+    JR NZ, +                        ;if so, skip
     SET 0, A                        ;else, set bit 0 (do NES gfx)
 +:
     LD (OptionBitflags), A
     LD A, SNDID_BEEP                ;do beep sfx
     LD (SFXTrack0.SoundQueue), A
     LD (PlayerGfxOffset_Old + $01), A   ;invalidate old player gfx offset to refresh
+    JR OptionUpdateSettings
+    ; --- BUTTON 1 PROCESS ---
 OptionCheckBtn1:
     LD A, (SavedJoypad1Bits)        ;check if button 1 is being pressed
     AND A, $01 << SMS_BTN_1
-    JP Z, +                         ;if not, skip
+    JR Z, OptionCheckLeftRight      ;if not, skip
     LD A, $01                       ;set flag to signal that we are leaving the options menu
     LD (Temp_Bytes + $01), A
     LD A, SNDID_BEEP                ;do beep sfx
     LD (SFXTrack0.SoundQueue), A
+    JR OptionUpdateSettings
+    ; --- BUTTON LEFT/RIGHT PROCESS ---
+OptionCheckLeftRight:
+    LD A, (FMDetectedFlag)
+    OR A
+    JR Z, OptionUpdateSettings
+    LD A, (SavedJoypad1Bits)
+    AND A, $01 << SMS_BTN_LEFT | $01 << SMS_BTN_RIGHT
+    JR Z, OptionUpdateSettings
+    AND A, $01 << SMS_BTN_LEFT
+    LD A, (OptionBitflags)
+    RES 1, A
+    JR NZ, +
+    SET 1, A
 +:
+    LD (OptionBitflags), A
+    LD A, SNDID_BEEP                ;do beep sfx
+    LD (SFXTrack0.SoundQueue), A
+OptionUpdateSettings:
     LD HL, PlayerAnimTimer          ;update timer for walking animation
     DEC (HL)
+    ;
     LD A, (OptionBitflags)          ;set values depending on bit 0 of option bit flags
-    OR A
-    JP NZ, +
+    AND A, %00000001
+    JR NZ, +
     LD A, BANK_PLAYERGFX00
     LD (PlayerGfxBank), A
     LD A, VRAMTBL_BOWSERPAL
@@ -265,7 +360,7 @@ OptionCheckBtn1:
     LD (AnimateRoutine), HL
     LD HL, BowserGfxDraw
     LD (BowserDrawRoutine), HL
-    JP OptionDrawPlayer
+    JR @UpdateFMSettings
 +:
     LD A, BANK_PLAYERGFX04
     LD (PlayerGfxBank), A
@@ -277,6 +372,30 @@ OptionCheckBtn1:
     LD (AnimateRoutine), HL
     LD HL, BowserGfxDraw_NES
     LD (BowserDrawRoutine), HL
+@UpdateFMSettings:
+    LD A, (FMDetectedFlag)
+    OR A
+    JR Z, OptionDrawPlayer
+    LD HL, $2044 | VRAMWRITE
+    RST setVDPAddress
+    LD A, (OptionBitflags)
+    AND A, %00000010
+    JR NZ, +
+    XOR A
+    OUT (AUDIO_CONTROL), A
+    LD HL, SndChannelProcessMUS
+    LD (MusicRoutine), HL
+    LD HL, Map_BG_SoundSelector
+    JR @DrawSelector
++:
+    LD A, %00000011
+    OUT (AUDIO_CONTROL), A
+    LD HL, SndChannelProcessFM
+    LD (MusicRoutine), HL
+    LD HL, Map_BG_SoundSelector + $08
+@DrawSelector:
+    LD BC, $0800 + VDPDATA_PORT
+    OTIR
 OptionDrawPlayer:
     CALL PlayerGfxHandler           ;draw player
     CALL SoundEngine                ;do sound processing
@@ -285,7 +404,7 @@ OptionDrawPlayer:
 OptionNMIWait:
     LD A, (FrameDoneFlag)           ;busy loop until NMI has triggered
     OR A
-    JP NZ, OptionNMIWait
+    JR NZ, OptionNMIWait
     JP OptionsLoop
 ;   ------ END OF OPTION SCREEN PROCESS ------
 MainGameInit:
@@ -304,9 +423,21 @@ MainGameInit:
     CALL AssetLoader
     LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
+;   TEST
+    LD A, BANK_SLOT2
+    LD (MAPPER_SLOT2), A
+    LD HL, $C000
+    RST setVDPAddress
+    LD HL, GroundPaletteData + $03
+    LD BC, $2000 + VDPDATA_PORT
+    OTIR
+    LD A, ASSET_BGOVERWORLD
+    CALL AssetLoader
+    LD (MAPPER_SLOT2), A
+    CALL zx7_decompressVRAM
 ;   SET DEFAULT BANK FOR SLOT 2
     LD A, BANK_SLOT2
-    LD (MAPPER_SLOT2), A 
+    LD (MAPPER_SLOT2), A
 ;-------------------------------------------------------------------------------------
 ;   BOOT CHECK
     LD HL, ColdBootOffset           ;load default cold boot pointer
@@ -509,6 +640,10 @@ NonMaskableInterrupt:
     OUT (VDPCON_PORT), A
     LD L, <Sprite_X_Position
     CALL OutiBlock128
+;
+    LD A, (RenderColumnFlag)
+    OR A
+    CALL NZ, ColumnWriteUpdate
 ;   NAMETABLE UPDATE
     LD A, (VRAM_Buffer_AddrCtrl)    ;load control for pointer to buffer contents
     LD B, A                         ;save for UpdateScreen
@@ -533,8 +668,8 @@ NonMaskableInterrupt:
     XOR A
     LD (VRAM_Buffer_AddrCtrl), A    ;reinit address control to VRAM_Buffer1
 ;   TILE STREAMING
-    LD HL, TileStreamRet
-    PUSH HL
+    ;LD HL, TileStreamRet
+    ;PUSH HL
     LD HL, (PlayerGfxOffset_Old)
     LD DE, (PlayerGfxOffset)
     SBC HL, DE
@@ -602,7 +737,7 @@ ReadJoypads:
     IN A, (CONTROLPORT2)
     CPL                             ; INVERT SO 1 = PRESSED, 0 = NO PRESS
     BIT 4, A                        ; CHECK IF RESET BUTTON IS PRESSED
-    JP NZ, BootVector               ; IF SO, RESET THE GAME
+    JP NZ, ResetVector              ; IF SO, RESET THE GAME
     AND A, $0F                      ; ISOLATE 2P BUTTONS
     OR A, D                         ; COMBINE WITH THE BUTTONS FROM THE FIRST READ
     RLCA                            ; SHIFT INTO PLACE
@@ -685,22 +820,53 @@ UpdateScreen:
     JP NZ, UpdateScreen@SkipBuff2Chk    ; if not, keep updating screen
     RET
 
-
 WriteVertColumnBuff2:
 ;   ADVANCE POINTER TO TILE DATA
+    PUSH HL
     INC L
     INC L
 ;   PREPARE SHADOW REGS
     EXX
-    LD HL, (VRAM_Buffer2)
-    LD A, L
-    LD L, H
+    POP HL
+    LD A, (HL)
+    INC L
+    LD L, (HL)
     LD H, A
     LD C, VDPCON_PORT
     LD DE, $0040
     EXX
 ;   WRITE 23 WORDS VERTICALLY
-    JP WriteVeriBlock_W ;- 11 * 23   ; 11 bytes per word
+    CALL WriteVeriBlock_W
+;   check if buffer is empty
+    LD A, (HL)
+    OR A
+    JP NZ, WriteVertColumnBuff2
+;   reset pointer here
+    LD HL, VRAM_Buffer2
+    LD (VRAM_Buffer2_Ptr), HL
+    RET
+
+
+ColumnWriteUpdate:
+    XOR A
+    LD (RenderColumnFlag), A
+;
+    LD HL, (ColumnWrite_Ptr)
+    INC L
+    INC L
+;
+    EXX
+    LD HL, (ColumnWrite_Ptr)
+    LD A, (HL)
+    INC L
+    LD L, (HL)
+    LD H, A
+    LD C, VDPCON_PORT
+    LD DE, $0040
+    EXX
+;
+    JP WriteVeriBlock_W
+
 
 IndirectCallHL:
     JP (HL)
@@ -800,8 +966,14 @@ MoveSpritesOffscreen:
 GetAreaMusic:
     LD A, (OperMode)
     OR A
-    RET Z
-;
+    JP NZ, NotOnTitleScreen
+    LD A, (OptionBitflags)
+    AND A, %00000010
+    LD A, SNDID_WATER
+    JP NZ, StoreMusicDirect
+    LD A, SNDID_SILENCE
+    JP StoreMusicDirect
+NotOnTitleScreen:
     LD A, (AltEntranceControl)
     CP A, $02
     JP Z, ChkAreaType
@@ -813,18 +985,18 @@ GetAreaMusic:
     CP A, $07
     JP Z, StoreMusic
 ChkAreaType:
+    LD C, $04
+    LD A, (BonusAreaFlag)
+    OR A
+    JP NZ, StoreMusic
     LD A, (AreaType)
     LD C, A
-    LD A, (CloudTypeOverride)
-    OR A
-    JP Z, StoreMusic
-    LD C, $04
 StoreMusic:
     LD A, C
     ADD A, SNDID_WATER
+StoreMusicDirect:
     LD (MusicTrack0.SoundQueue), A
     RET
-
 
 ;-------------------------------------------------------------------------------------
 
@@ -866,6 +1038,8 @@ InitializeMemory:
 ;
     LD HL, VRAM_Buffer1
     LD (VRAM_Buffer1_Ptr), HL
+    LD HL, VRAM_Buffer2
+    LD (VRAM_Buffer2_Ptr), HL
     LD HL, PlayerGraphicsTable@smlStand
     LD (PlayerGfxOffset), HL
     LD A, (OptionBitflags)
@@ -1304,7 +1478,8 @@ StreamPlayerTiles:
     ; DEFAULT BANK
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
-    RET
+    ;RET
+    JP TileStreamRet
 
 
 ;   BC
@@ -1315,7 +1490,8 @@ StreamAnimatedBGTiles:
 ;   EXIT IF ON NES GFX
     LD A, (OptionBitflags)
     AND A, $01
-    RET NZ
+    ;RET NZ
+    JP NZ, TileStreamRet
 ;
     LD C, VDPCON_PORT
     LD IXH, >OutiBlock128
@@ -1382,7 +1558,8 @@ StreamAnimatedBGTiles:
     LD HL, BGTileQueue2.UpdateFlag
     LD A, (HL)
     OR A
-    RET Z
+    ;RET Z
+    JP Z, TileStreamRet
     LD (HL), $00
     INC L
     ; SET VDP ADDRESS
@@ -1402,7 +1579,9 @@ StreamAnimatedBGTiles:
     LD L, A
     ; WRITE TO VRAM
     CALL OutiBlock128
-    JP OutiBlock128 + $80
+    ;JP OutiBlock128 + $80
+    CALL OutiBlock128 + $80
+    JP TileStreamRet
 
 ;-------------------------------------------------------------------------------------
 
@@ -2704,6 +2883,17 @@ Map_BG_Options:
 .SECTION "Options BG Palette" BANK BANK_PLAYERGFX04 SLOT 2 FREE
 Pal_BG_Options:
     .db $00 $01 $02 $03 $06 $0B $0F $2B $3F
+.ENDS
+
+.SECTION "Options BG Sound Select TMAP" BANK BANK_PLAYERGFX04 SLOT 2 FREE
+Map_BG_SoundSelect:
+    .dw $0195, $0196, $0197, $0000, $0198, $0199
+.ENDS
+
+.SECTION "Options BG Sound Selector" BANK BANK_CODE SLOT 0 FREE
+Map_BG_SoundSelector:
+    .dw $019A, $0000, $0000, $0000
+    .dw $0000, $0000, $0000, $019A
 .ENDS
 
 ;-------------------------------------------------------------------------------------
