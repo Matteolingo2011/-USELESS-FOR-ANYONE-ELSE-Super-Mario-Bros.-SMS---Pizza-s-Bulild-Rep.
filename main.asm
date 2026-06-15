@@ -640,7 +640,7 @@ NonMaskableInterrupt:
     OUT (VDPCON_PORT), A
     LD L, <Sprite_X_Position
     CALL OutiBlock128
-;
+;   EXTRA NAMETABLE UPDATE FOR COLUMN DRAWING
     LD A, (RenderColumnFlag)
     OR A
     CALL NZ, ColumnWriteUpdate
