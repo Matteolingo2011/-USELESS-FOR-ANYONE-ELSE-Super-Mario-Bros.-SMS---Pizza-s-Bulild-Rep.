@@ -969,7 +969,7 @@ GetAreaMusic:
     JP NZ, NotOnTitleScreen
     LD A, (OptionBitflags)
     AND A, %00000010
-    LD A, SNDID_WATER
+    LD A, SNDID_TITLE_FM
     JP NZ, StoreMusicDirect
     LD A, SNDID_SILENCE
     JP StoreMusicDirect

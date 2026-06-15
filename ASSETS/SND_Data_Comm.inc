@@ -43,6 +43,10 @@
     .db $E9, data
 .ENDM
 
+.MACRO smpsTempo ARGS data
+    .db $EA, data
+.ENDM
+
 .MACRO smpsChangeVol ARGS data
     .DB $EC, data
 .ENDM
