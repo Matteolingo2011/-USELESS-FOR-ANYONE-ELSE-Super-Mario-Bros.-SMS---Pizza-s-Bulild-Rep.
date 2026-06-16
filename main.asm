@@ -179,10 +179,10 @@ Start:
     LD A, (MemoryControlValue)
     OUT (MEM_CONTROL), A
     ; CHECK IF COUNTER IS 4 (ONLY JAPANESE SMS OR AFTERMARKET UNIT. MARK3 NOT ALLOWED DUE TO NO FM/PSG MIXING)
-    ;LD A, C
-    ;CP A, $04
-    ;LD A, $00
-    ;JP NZ, +
+    LD A, C
+    CP A, $04
+    LD A, $00
+    JP NZ, +
     LD A, $01
 +:
     LD (FMDetectedFlag), A
@@ -248,10 +248,15 @@ ResetStart:
     LD A, (FMDetectedFlag)
     OR A
     JP Z, +
-    LD HL, $2082 | VRAMWRITE
+    LD HL, $2048 | VRAMWRITE
     RST setVDPAddress
-    LD HL, Map_BG_SoundSelect
-    LD BC, _sizeof_Map_BG_SoundSelect * $100 + VDPDATA_PORT
+    LD HL, Map_BG_SoundSelect@Line1
+    LD BC, $0600 + VDPDATA_PORT
+    OTIR
+    LD HL, $20C8 | VRAMWRITE
+    RST setVDPAddress
+    LD HL, Map_BG_SoundSelect@Line2
+    LD BC, $0600 + VDPDATA_PORT
     OTIR
 +:
     LD A, BANK_SLOT2
@@ -320,26 +325,22 @@ OptionsCheckJoypad:
 OptionCheckBtn1:
     LD A, (SavedJoypad1Bits)        ;check if button 1 is being pressed
     AND A, $01 << SMS_BTN_1
-    JR Z, OptionCheckLeftRight      ;if not, skip
+    JR Z, OptionCheckBtn2           ;if not, skip
     LD A, $01                       ;set flag to signal that we are leaving the options menu
     LD (Temp_Bytes + $01), A
     LD A, SNDID_BEEP                ;do beep sfx
     LD (SFXTrack0.SoundQueue), A
     JR OptionUpdateSettings
-    ; --- BUTTON LEFT/RIGHT PROCESS ---
-OptionCheckLeftRight:
+    ; --- BUTTON 2 PROCESS ---
+OptionCheckBtn2:
     LD A, (FMDetectedFlag)
     OR A
     JR Z, OptionUpdateSettings
     LD A, (SavedJoypad1Bits)
-    AND A, $01 << SMS_BTN_LEFT | $01 << SMS_BTN_RIGHT
+    AND A, $01 << SMS_BTN_2
     JR Z, OptionUpdateSettings
-    AND A, $01 << SMS_BTN_LEFT
     LD A, (OptionBitflags)
-    RES 1, A
-    JR NZ, +
-    SET 1, A
-+:
+    XOR A, $01 << $01
     LD (OptionBitflags), A
     LD A, SNDID_BEEP                ;do beep sfx
     LD (SFXTrack0.SoundQueue), A
@@ -373,29 +374,41 @@ OptionUpdateSettings:
     LD HL, BowserGfxDraw_NES
     LD (BowserDrawRoutine), HL
 @UpdateFMSettings:
-    LD A, (FMDetectedFlag)
+    LD A, (FMDetectedFlag)          ;skip FM sound setting update if FM module not detected
     OR A
     JR Z, OptionDrawPlayer
-    LD HL, $2044 | VRAMWRITE
-    RST setVDPAddress
-    LD A, (OptionBitflags)
+    LD A, (OptionBitflags)          ;set values depending on bit 1 of option bit flags
     AND A, %00000010
     JR NZ, +
     XOR A
     OUT (AUDIO_CONTROL), A
     LD HL, SndChannelProcessMUS
     LD (MusicRoutine), HL
-    LD HL, Map_BG_SoundSelector
+    LD HL, $019A
+    LD DE, $0000
     JR @DrawSelector
 +:
     LD A, %00000011
     OUT (AUDIO_CONTROL), A
     LD HL, SndChannelProcessFM
     LD (MusicRoutine), HL
-    LD HL, Map_BG_SoundSelector + $08
+    LD HL, $0000
+    LD DE, $019A
 @DrawSelector:
-    LD BC, $0800 + VDPDATA_PORT
-    OTIR
+    LD BC, $2000 | VRAMWRITE + VDPCON_PORT
+    LD A, $44
+    OUT (C), A
+    OUT (C), B
+    DEC C
+    OUT (C), L
+    OUT (C), H
+    INC C
+    LD A, $C4
+    OUT (C), A
+    OUT (C), B
+    DEC C
+    OUT (C), E
+    OUT (C), D
 OptionDrawPlayer:
     CALL PlayerGfxHandler           ;draw player
     CALL SoundEngine                ;do sound processing
@@ -423,7 +436,8 @@ MainGameInit:
     CALL AssetLoader
     LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
-;   TEST
+.IF BOOTPALTILES != $00
+;   LOAD PALETTE AND OVERWORLD TILE DATA ON BOOTUP (DEBUG)
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
     LD HL, $C000
@@ -435,6 +449,7 @@ MainGameInit:
     CALL AssetLoader
     LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
+.ENDIF
 ;   SET DEFAULT BANK FOR SLOT 2
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
@@ -2887,13 +2902,10 @@ Pal_BG_Options:
 
 .SECTION "Options BG Sound Select TMAP" BANK BANK_PLAYERGFX04 SLOT 2 FREE
 Map_BG_SoundSelect:
-    .dw $0195, $0196, $0197, $0000, $0198, $0199
-.ENDS
-
-.SECTION "Options BG Sound Selector" BANK BANK_CODE SLOT 0 FREE
-Map_BG_SoundSelector:
-    .dw $019A, $0000, $0000, $0000
-    .dw $0000, $0000, $0000, $019A
+@Line1:
+    .dw $0195, $0196, $0197
+@Line2:
+    .dw $0198, $0199, $0000
 .ENDS
 
 ;-------------------------------------------------------------------------------------

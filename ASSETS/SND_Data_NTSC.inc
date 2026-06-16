@@ -456,13 +456,13 @@ Mus_LevelVictory:
     .db nG1, $08, nC2, nE2, nG2, nC3, nE3, nG3, $18, nE3
     .db nGs1, $08, nC2, nEb2, nGs2, nC3, nEb3, nGs3, $18, nEb3
     .db nBb1, $08, nD2, nF2, nBb2, nD3, nF3, nBb3, $18, $08, $08, $08
-    .db nE3, $25
+    .db nE3, $24
     smpsStop
 @ch2:
     .db nRst, $08
     .db nE1, nG1, nC2, nE2, nG2, nC3, $18, nG2, $20
     .db nEb1, $08, nGs1, nC2, nEb2, nGs2, nC3, $18, nGs2, $20
-    .db nF1, $08, nBb1, nD2, nF2, nBb2, nD3, $18, $18, nC4, $25
+    .db nF1, $08, nBb1, nD2, nF2, nBb2, nD3, $18, $18, nC4, $24
     smpsStop
 .ENDS
 
