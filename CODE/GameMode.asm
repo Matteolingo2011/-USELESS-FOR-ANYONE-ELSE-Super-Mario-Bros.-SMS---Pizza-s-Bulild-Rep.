@@ -269,6 +269,8 @@ UpdScrollVar:
     SUB A, $20
     JP M, CheckScrollEight
     LD (ScrollThirtyTwo), A
+    LD HL, VRAM_Buffer2
+    LD (VRAM_Buffer2_Ptr), HL
 RunParser:
     CALL AreaParserTaskHandler
     ; FALL THROUGH

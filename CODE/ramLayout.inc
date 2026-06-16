@@ -71,7 +71,7 @@
     ; $2E
     ;VRAM_Buffer2:                   dsb $D2 ; (23 * 2) * 4 + 3 == $BB
     VRAM_Buffer1_Ptr:               dsb $02
-    VRAM_Buffer1:                   dsb $80
+    VRAM_Buffer1:                   dsb $A0
     ColumnWrite_Ptr:                dsb $02
     ColumnUpdate_Ptr:               dsb $02
 .ENDS
