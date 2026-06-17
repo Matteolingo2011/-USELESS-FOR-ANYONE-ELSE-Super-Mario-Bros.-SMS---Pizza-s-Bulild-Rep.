@@ -185,6 +185,7 @@ OutputInter:
     ; RESET BANK, ENABLE INTS
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
+    IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
     EI
     ;
     RET
@@ -202,6 +203,7 @@ GameOverInter:
     ;
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
+    IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
     EI
     ;
     JP IncModeTask_B
@@ -461,6 +463,7 @@ DrawTitleScreen:
     OTIR
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
+    IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
     EI
 ;   Set Buffer control
     LD A, (OptionBitflags)
@@ -695,6 +698,7 @@ UndergroundSetup:
 TileLoadDone:
     LD A, BANK_SLOT2
     LD (MAPPER_SLOT2), A
+    IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
     EI
     RET
 

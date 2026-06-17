@@ -14,6 +14,7 @@ GameMode:
 ;-------------------------------------------------------------------------------------
 
 InitializeArea:
+    DI                              ;prevent interrupts from corrupting mem initialization
     LD HL, InitAreaOffset           ;clear all memory again, only as far as $074b
     CALL InitializeMemory           ;this is only necessary if branching from
 ;
@@ -83,6 +84,9 @@ InitializeArea:
     LD (DisableScreenFlag), A
     LD HL, OperMode_Task            ;increment one of the modes
     INC (HL)
+
+    IN A, (VDPCON_PORT)             ;clear any pending VDP interrupts
+    EI
     RET
 
 ;-------------------------------------------------------------------------------------

@@ -127,11 +127,13 @@ VdpVector:
     OUT (VDPCON_PORT), A
     LD A, $88
     OUT (VDPCON_PORT), A
-    LD A, %00100100                 ;TURN OFF H-INTS
+    LD A, %00100100                 ;TURN OFF H-INTS (ONLY 1 IS REQUIRED PER FRAME)
     OUT (VDPCON_PORT), A
     LD A, $80
     OUT (VDPCON_PORT), A
-    JP NMIDone
+    POP AF
+    EI                              ;enable Z80 interrupts
+    RET                             ;return from H-INT
 
 
 ;-------------------------------------------------------------------------------------
@@ -411,7 +413,7 @@ OptionUpdateSettings:
     OUT (C), D
 OptionDrawPlayer:
     CALL PlayerGfxHandler           ;draw player
-    CALL SoundEngine                ;do sound processing
+    ;CALL SoundEngine                ;do sound processing
     LD A, $01                       ;signal that we have completed a frame on time
     LD (FrameDoneFlag), A
 OptionNMIWait:
@@ -488,7 +490,7 @@ EndlessLoop:
     OR A
     JP NZ, EndlessLoop
     ; --- SOUND UPDATE ---
-    CALL SoundEngine
+    ;CALL SoundEngine
     ; --- PAUSE ROUTINE ---
     LD A, (OperMode)                ;are we in victory mode?
     CP A, MODE_VICTORY              ;if so, go ahead
@@ -695,16 +697,27 @@ TileStreamRet:
 ;   DON'T SET H-INT IF SPRITE 0 FLAG ISN'T SET (LAG FRAMES ALWAYS SET H-INT)
     LD A, (Sprite0HitDetectFlag)
     OR A
-    JP Z, NMIDone
+    JP Z, SoundUpdate
 LagFrame:
     LD A, %00110100
     OUT (VDPCON_PORT), A
     LD A, $80
     OUT (VDPCON_PORT), A
-NMIDone:
-    POP AF
+SoundUpdate:
+;   SOUND UPDATE
+    EI                              ;enable z80 interrupts here because H-INT WILL interrupt SoundEngine!
+    PUSH BC
+    PUSH DE
+    PUSH HL
+    PUSH IX
+    CALL SoundEngine
+    POP IX
+    POP HL
+    POP DE
+    POP BC
 ;   NMI END
-    EI                              ;enable Z80 interrupts
+    POP AF
+    ;EI                              ;enable Z80 interrupts
     RET
 
 ;-------------------------------------------------------------------------------------
