@@ -1460,10 +1460,17 @@ PJumpSnd:
     LD A, (PlayerSize)                  ;is mario big?
     OR A
     LD A, SNDID_JUMPBIG                 ;load big mario's jump sound by default
+    LD B, SNDID_JUMPBIG_01
     JP Z, SJumpSnd
     LD A, SNDID_JUMPSMALL               ;if not, load small mario's jump sound
+    LD B, SNDID_JUMPSMALL_01
 SJumpSnd:
     LD (SFXTrack0.SoundQueue), A
+    LD A, (OptionBitflags)              ;load additional sfx layer if in FM mode
+    AND A, $01 << $01
+    JP Z, X_Physics
+    LD A, B
+    LD (SFXTrack1.SoundQueue), A
 ;
 ;   HORIZONTAL PHYSICS
 ;

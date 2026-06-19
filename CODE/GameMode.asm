@@ -6364,6 +6364,12 @@ HandlePowerUpCollision:
 ;
     LD A, SNDID_POWERUP             ;play the power-up sound
     LD (SFXTrack1.SoundQueue), A
+    LD A, (OptionBitflags)          ;load additional sfx layer if in FM mode
+    AND A, $01 << $01
+    JP Z, +
+    LD A, SNDID_POWERUP_01
+    LD (SFXTrack0.SoundQueue), A
++:
 ;
     LD A, (PowerUpType)             ;check power-up type
     CP A, $02
@@ -6395,6 +6401,8 @@ Shroom_Flower_PUp:
     JP UpToFiery                    ;jump to set values accordingly
 
 SetFor1Up:
+    XOR A                           ;don't play additional layer for powerup sfx
+    LD (SFXTrack0.SoundQueue), A    ;1-up sfx gets set to play later in FloateyNumbersRoutine
     LD L, <FloateyNum_Control       ;change 1000 points into 1-up instead
     LD (HL), $0B
     RET

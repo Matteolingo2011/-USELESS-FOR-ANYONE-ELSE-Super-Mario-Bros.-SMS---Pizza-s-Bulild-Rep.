@@ -117,13 +117,13 @@ RunSoundSubroutines:
     OR A
     JP Z, SkipSFX
 ;   SFX UPDATE
-    ; SFX TRACK 0
+    ; SFX TRACK 0 (TONE)
     LD H, >SFXTrack0
     CALL SndChannelProcessSFX
-    ; SFX TRACK 1
+    ; SFX TRACK 1 (TONE)
     LD H, >SFXTrack1
     CALL SndChannelProcessSFX
-    ; SFX TRACK 2
+    ; SFX TRACK 2 (NOISE)
     LD H, >SFXTrack2
     CALL SndChannelProcessSFX
 ;   MUSIC UPDATE
@@ -432,9 +432,43 @@ SndProcessQueueSFX:
     LD A, (HL)
     CP A, SNDID_1UP
     RET Z
+;   DO ADDITIONAL PROCESSING IF DOING JUMP SFX IN FM MODE
+    LD A, (OptionBitflags)
+    AND A, $01 << $01
+    JP Z, @GetSFXData
+    LD A, (HL)
+    CP A, SNDID_JUMPSMALL
+    JP Z, +
+    CP A, SNDID_JUMPBIG
+    JP NZ, @GetSFXData
++:
+    ; SKIP IF JUMP SFX IS REPLAYING
+    DEC L           ; SoundQueue
+    CP A, (HL)
+    JP Z, @GetSFXData
+    ; SKIP IF SFXTrack1 HAS A SFX IN QUEUE
+    INC H           ; SFXTrack1
+    LD A, (HL)
+    OR A
+    JP NZ, ++
+    ; SKIP IF SFXTrack1's PLAYING SFX ISN'T 2ND PART OF JUMPING SFX
+    INC L           ; SoundPlaying
+    LD A, (HL)
+    CP A, SNDID_JUMPSMALL_01
+    JP Z, +
+    CP A, SNDID_JUMPBIG_01
+    JP NZ, ++
++:
+    ; FINALLY, SILENCE SFXTrack1
+    DEC L           ; SoundQueue
+    LD (HL), SNDID_SFX_SILENCE
+++:
+    DEC H           ; SFXTrack0
+@GetSFXData:
+;   USE AS OFFSET INTO SndIndexTable
+    LD L, <SFXTrack0.SoundPlaying
     LD A, B
     LD (HL), A
-;   USE AS OFFSET INTO SndIndexTable
     SUB A, $81
     ADD A, A
     LD L, <SFXTrack0.Control
@@ -463,6 +497,13 @@ SndProcessQueueSFX:
     LD (HL), A      ; Detune
     INC L
     LD (HL), $01    ; Duration
+;   INCREMENT VOLUME BY 1 IF DOING FM MUSIC
+    LD A, (OptionBitflags)
+    AND A, $01 << $01
+    JP Z, +
+    LD L, <SFXTrack0.Volume
+    INC (HL)
++:
 ;   SET SFX OVERRIDE BIT ON MUSIC TRACK THAT SHARES CHANNEL
     DEC H
     DEC H
@@ -1553,7 +1594,7 @@ SndStopChannel:
 
 .SECTION "Sound Index Table" BANK BANK_CODE SLOT 0 FREE BITWINDOW 8 RETURNORG
 SndIndexTable:
-    ; SFX START
+    ; SFX START ($00 - $12)
     .dw SFX_JumpBig
     .dw SFX_Bump
     .dw SFX_Swim
@@ -1575,7 +1616,7 @@ SndIndexTable:
     .dw SFX_Shatter
     .dw SFX_Flame
     .dw SFX_Pause
-    ; PSG MUSIC START
+    ; PSG MUSIC START ($13 - $20)
     .dw Mus_Water
     .dw Mus_Overworld
     .dw Mus_Underground
@@ -1591,7 +1632,7 @@ SndIndexTable:
     .dw Mus_GameOver
     .dw Mus_Death
     .dw Mus_Silence
-    ; FM MUSIC START
+    ; FM MUSIC START ($21 - $31)
     .dw Mus_Water_FM
     .dw Mus_Overworld_FM
     .dw Mus_Underground_FM
@@ -1610,6 +1651,11 @@ SndIndexTable:
     .dw Mus_Bowser_FM
     .dw Mus_FinalBowser_FM
     .dw Mus_Title_FM
+    ; ADDITIONAL SFX ($32 - $35)
+    .dw SFX_JumpBig_P1
+    .dw SFX_JumpSml_P1
+    .dw SFX_Powerup_P1
+    .dw SFX_Silence
 .ENDS
 
 ;--------------------------------
