@@ -186,8 +186,8 @@ GameCoreRoutine:
     CALL GameRoutines                   ;execute one of many possible subs
     LD A, (OperMode_Task)               ;check major task of operating mode
     CP A, $03                           ;if we are supposed to be here,
-    JP NC, GameEngine                   ;branch to the game engine itself
-    RET
+    RET C                               ;exit if we are not suppose to be in the mode
+    ; FALL THROUGH
     
 ;-------------------------------------------------------------------------------------
 
@@ -5131,13 +5131,10 @@ RunGameTimer:
     OR A, (HL)
     JP NZ, ResGTCtrl                        ;if timer not at 100, branch to reset game timer control
 ;
-    ;CALL GetAreaMusic
     LD A, (MusicTrack0.SoundPlaying)
     LD (MusicTrack1.SoundQueue), A
     LD A, SNDID_HURRYUP
     LD (MusicTrack0.SoundQueue), A          ; EVENT
-    LD A, $01
-    LD (SndHurryUpFlag), A
 ;
 ResGTCtrl:
     .IF PALBUILD == $00
@@ -7619,7 +7616,6 @@ HandleCoinMetatile:
 HandleAxeMetatile:
     XOR A
     LD (OperMode_Task), A               ;reset secondary mode
-    LD (SndHurryUpFlag), A              ;clear hurry up flag for music
     LD A, $02
     LD (OperMode), A                    ;set primary mode to autoctrl mode
     LD A, $18

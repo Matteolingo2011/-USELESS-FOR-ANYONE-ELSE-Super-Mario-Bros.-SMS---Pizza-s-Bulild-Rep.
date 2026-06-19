@@ -543,7 +543,19 @@ SndProcessQueueMusic:
     INC HL          ; UNUSED
     INC HL          ; CHANNEL COUNT
     INC HL          ; TICK MULTIPLIER
+;   SET SPEED FLAG DEPENDING ON ID
+    LD A, (MusicTrack0.SoundPlaying)
+    CP A, SNDID_SILENCE + $01
+    JP NC, @TempoSetup
+    CP A, SNDID_HURRYUP
+    JP C, @TempoSetup
+    LD A, $00
+    LD (SndHurryUpFlag), A
+    JP NZ, @TempoSetup
+    INC A
+    LD (SndHurryUpFlag), A
 ;   SETUP TEMPO
+@TempoSetup:
     XOR A
     LD (SndTempoTimeout), A
     ; LD E, <MusicTrack0.SoundPlaying
@@ -949,7 +961,19 @@ SndProcessQueueMusicFM:
     INC HL          ; UNUSED
     INC HL          ; CHANNEL COUNT
     INC HL          ; TICK MULTIPLIER
+;   SET SPEED FLAG DEPENDING ON ID
+    LD A, (MusicTrack0.SoundPlaying)
+    CP A, SNDID_SILENCE + $01
+    JP NC, @TempoSetup
+    CP A, SNDID_HURRYUP
+    JP C, @TempoSetup
+    LD A, $00
+    LD (SndHurryUpFlag), A
+    JP NZ, @TempoSetup
+    INC A
+    LD (SndHurryUpFlag), A
 ;   SETUP TEMPO
+@TempoSetup:
     XOR A
     LD (SndTempoTimeout), A
     LD A, (MusicTrack0.SoundPlaying)

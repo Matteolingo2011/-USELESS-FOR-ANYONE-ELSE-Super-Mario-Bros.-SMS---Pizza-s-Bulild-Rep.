@@ -311,7 +311,6 @@ NextArea:
     CALL ChgAreaMode                    ;do sub to set secondary mode, disable screen and sprite 0
     XOR A
     LD (HalfwayPage), A                 ;reset halfway page to 0 (beginning)
-    LD (SndHurryUpFlag), A              ;reset hurry up flag for sound driver
     LD A, SNDID_SILENCE
     LD (MusicTrack0.SoundQueue), A      ; EVENT
     RET
@@ -334,7 +333,6 @@ HalfwayPageNybbles:
 PlayerLoseLife:
     XOR A
     LD (Sprite0HitDetectFlag), A        ;disable screen and sprite 0 check
-    LD (SndHurryUpFlag), A
     LD (DisableScreenFlag), A
     LD A, SNDID_SILENCE
     LD (MusicTrack0.SoundQueue), A      ; EVENT
