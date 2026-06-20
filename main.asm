@@ -662,7 +662,7 @@ NonMaskableInterrupt:
     LD A, (RenderColumnFlag)
     OR A
     CALL NZ, ColumnWriteUpdate
-;   NAMETABLE UPDATE
+;   NAMETABLE UPDATE                [CPU TIME: ~04 LINES]
     LD A, (VRAM_Buffer_AddrCtrl)    ;load control for pointer to buffer contents
     LD B, A                         ;save for UpdateScreen
     ADD A, A
@@ -1036,18 +1036,18 @@ InitializeNameTables:
     LD HL, VRAM_ADR_NAMETBL | VRAMWRITE
     CALL setVDPAddress
     LD BC, lobyte(NAMETABLE_SIZE) * $100 + hibyte(NAMETABLE_SIZE)
-    XOR A                                    ;clear name table with blank tile
+    XOR A                               ;clear name table with blank tile
 @writeLoop:
     OUT (VDPDATA_PORT), A
     DJNZ @writeLoop
     DEC C
     JP NZ, @writeLoop
 ;
-    LD HL, VRAM_Buffer1
+    LD HL, VRAM_Buffer1                 ;reset Buffer1's ptr
     LD (VRAM_Buffer1_Ptr), HL
     LD (VRAM_Buffer1), A
 ;
-    LD (HorizontalScroll), A
+    LD (HorizontalScroll), A            ;reset scroll vars
     LD (VDPHScroll), A
     OUT (VDPCON_PORT), A
     LD A, $88
@@ -1690,7 +1690,7 @@ AssetLoaderTable:
     .dw Tiles_BG_Overworld, VRAM_ADR_BG_LVL | VRAMWRITE
     ;
     .db :Tiles_BG_Snow
-    .dw Tiles_BG_Snow, $3680 | VRAMWRITE
+    .dw Tiles_BG_Snow, $3300 | VRAMWRITE ;$3680 | VRAMWRITE
     ;
     .db :Tiles_BG_Underground
     .dw Tiles_BG_Underground, $3A80 | VRAMWRITE
@@ -1947,6 +1947,7 @@ DaySnowPaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
     .db $39, $00, $01, $16, $2B, $04, $18, $1C, $05, $0A, $3E, $0F, $2A, $3F, $3A, $3E
+    ;.db $39, $00, $01, $16, $2B, $04, $18, $1C, $15, $1A, $3E, $1F, $2A, $3F, $3A, $3E
     .db $39, $00, $01, $16, $2B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $00
 .ENDS
@@ -1955,7 +1956,8 @@ DaySnowPaletteData:
 NightSnowPaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
-    .db $00, $00, $01, $16, $2B, $04, $18, $1C, $05, $0A, $3E, $0F, $2A, $3F, $3A, $3E
+    .db $00, $00, $01, $16, $2B, $04, $18, $1C, $15, $0A, $3E, $0F, $2A, $3F, $3A, $3E
+    ;.db $00, $00, $01, $16, $2B, $04, $18, $1C, $15, $1A, $3E, $1F, $2A, $3F, $3A, $3E
     .db $00, $00, $01, $16, $2B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $00
 .ENDS
