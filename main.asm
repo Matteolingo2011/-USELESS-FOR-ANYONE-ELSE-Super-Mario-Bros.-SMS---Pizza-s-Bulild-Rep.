@@ -1072,12 +1072,10 @@ InitializeMemory:
     LD (VRAM_Buffer1_Ptr), HL
     LD HL, VRAM_Buffer2
     LD (VRAM_Buffer2_Ptr), HL
-    LD HL, PlayerGraphicsTable@smlStand
-    LD (PlayerGfxOffset), HL
     LD A, (OptionBitflags)
     AND A, $01
     LD A, BANK_PLAYERGFX00
-    JP Z, +
+    JR Z, +
     LD A, BANK_PLAYERGFX04
 +:
     LD (PlayerGfxBank), A
@@ -1114,12 +1112,10 @@ InitializeMemoryExceptSND:
     LD (VRAM_Buffer1_Ptr), HL
     LD HL, VRAM_Buffer2
     LD (VRAM_Buffer2_Ptr), HL
-    LD HL, PlayerGraphicsTable@smlStand
-    LD (PlayerGfxOffset), HL
     LD A, (OptionBitflags)
     AND A, $01
     LD A, BANK_PLAYERGFX00
-    JP Z, +
+    JR Z, +
     LD A, BANK_PLAYERGFX04
 +:
     LD (PlayerGfxBank), A
