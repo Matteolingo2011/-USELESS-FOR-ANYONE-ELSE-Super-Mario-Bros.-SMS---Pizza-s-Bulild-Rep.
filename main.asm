@@ -690,7 +690,7 @@ NonMaskableInterrupt:
     LD DE, (PlayerGfxOffset)
     SBC HL, DE
     JP NZ, StreamPlayerTiles        ;[CPU TIME: 21 LINES]
-    JP StreamAnimatedBGTiles        ;[CPU TIME: ~25 LINES]
+    JP StreamAnimatedBGTiles        ;[CPU TIME: ~30 LINES]
 TileStreamRet:
     CALL ReadJoypads
 ;   DON'T SET H-INT IF SPRITE 0 FLAG ISN'T SET (LAG FRAMES ALWAYS SET H-INT)
@@ -1560,15 +1560,14 @@ StreamPlayerTiles:
     JP TileStreamRet
 
 
-;   BC
-;   DE
-;   HL
-;   IXL
+;   C - VDP PORTS
+;   DE - N/A 
+;   HL - BGTileQueue0 Ptr/Tile Data Ptr
+;   IX - Offset into OUTI Block
 StreamAnimatedBGTiles:
 ;   EXIT IF ON NES GFX
     LD A, (OptionBitflags)
     AND A, $01
-    ;RET NZ
     JP NZ, TileStreamRet
 ;
     LD C, VDPCON_PORT
@@ -1578,7 +1577,7 @@ StreamAnimatedBGTiles:
     LD HL, BGTileQueue0.UpdateFlag
     LD A, (HL)
     OR A
-    JP Z, @CheckSlot1
+    JR Z, @CheckSlot1
     LD (HL), $00
     INC L
     ; SET VDP ADDRESS
@@ -1607,7 +1606,7 @@ StreamAnimatedBGTiles:
     LD HL, BGTileQueue1.UpdateFlag
     LD A, (HL)
     OR A
-    JP Z, @CheckSlot2
+    JR Z, @CheckSlot2
     LD (HL), $00
     INC L
     ; SET VDP ADDRESS
@@ -1631,12 +1630,11 @@ StreamAnimatedBGTiles:
     CALL IndirectCallIX
     INC C
 @CheckSlot2:
-;   SLOT 2 (FIXED 6) [MAX CYCLES: 3250]
+;   SLOT 2 (FIXED 4/6) [MAX CYCLES: 3250]
     ; CHECK ANIMATE FLAG
     LD HL, BGTileQueue2.UpdateFlag
     LD A, (HL)
     OR A
-    ;RET Z
     JP Z, TileStreamRet
     LD (HL), $00
     INC L
@@ -1657,8 +1655,9 @@ StreamAnimatedBGTiles:
     LD L, A
     ; WRITE TO VRAM
     CALL OutiBlock128
-    ;JP OutiBlock128 + $80
-    CALL OutiBlock128 + $80
+    LD A, (BGTileQueue2GrassFlag)
+    OR A
+    CALL NZ, OutiBlock128 + $80
     JP TileStreamRet
 
 ;-------------------------------------------------------------------------------------
@@ -1946,7 +1945,7 @@ CastlePaletteData:
 DaySnowPaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
-    .db $39, $00, $01, $16, $2B, $04, $18, $1C, $05, $0A, $3E, $0F, $2A, $3F, $3A, $3E
+    .db $39, $00, $01, $16, $2B, $04, $18, $1C, $15, $1A, $3E, $1F, $2A, $3F, $3A, $3E
     ;.db $39, $00, $01, $16, $2B, $04, $18, $1C, $15, $1A, $3E, $1F, $2A, $3F, $3A, $3E
     .db $39, $00, $01, $16, $2B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $00
@@ -1956,7 +1955,7 @@ DaySnowPaletteData:
 NightSnowPaletteData:
     .dw swapBytes($C000)
     .db StripeCount($20)
-    .db $00, $00, $01, $16, $2B, $04, $18, $1C, $15, $0A, $3E, $0F, $2A, $3F, $3A, $3E
+    .db $00, $00, $01, $16, $2B, $04, $18, $1C, $15, $1A, $3E, $1F, $2A, $3F, $3A, $3E
     ;.db $00, $00, $01, $16, $2B, $04, $18, $1C, $15, $1A, $3E, $1F, $2A, $3F, $3A, $3E
     .db $00, $00, $01, $16, $2B, $24, $0C, $06, $1B, $0F, $2A, $3F, $03, $02, $10, $08
     .db $00
@@ -3054,16 +3053,18 @@ Map_BG_SoundSelect:
 
 .INCDIR "ASSETS"
 ;-------------------------------------------------------------------------------------
-.SECTION "Animated Background Tiles" BANK BANK_SLOT2 SLOT 2 FREE
+.SECTION "Animated Background Tiles" BANK BANK_SLOT2 SLOT 2 ALIGN $100
 
-    .INCLUDE "ANI_Coin.inc"
-    .INCLUDE "ANI_Grass.inc"
-    .INCLUDE "ANI_Latern.inc"
-    .INCLUDE "ANI_WaterA1.inc"
-    .INCLUDE "ANI_WaterA0.inc"
-    .INCLUDE "ANI_WaterCoin.inc"
-    .INCLUDE "ANI_Lava.inc"
+    .INCLUDE "ANI_Coin.inc"         ; $0C: $0000, $0080, $0100
+    .INCLUDE "ANI_WaterCoin.inc"    ; $0C: $0180, $0280, $0300
+    .INCLUDE "ANI_WaterA1.inc"      ; $10: $0380, $03C0, 
+    .INCLUDE "ANI_WaterA0.inc"      ; $10: 
+    .INCLUDE "ANI_Grass.inc"        ; $12:
+    .INCLUDE "ANI_Latern.inc"       ; $0C:
+    .INCLUDE "ANI_Lava.inc"         ; $20:
+    .INCLUDE "ANI_QBlock.inc"       ; $0C:
 
+    ; $0000 - $103F
 .ENDS
 
 ;-------------------------------------------------------------------------------------

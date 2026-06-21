@@ -530,6 +530,9 @@ LoadLevelTileData:
 ;   LOAD ENEMY SPRITES
     CALL LoadEnemySprites
 ;   UPLOAD TILES FOR AREA
+    ; CLEAR GRASS FLAG (BGTileQueue2 will do 4 tiles)
+    XOR A
+    LD (BGTileQueue2GrassFlag), A
     ; ALWAYS LOAD COIN INTO SLOT 0 OF ANIMATED TILE QUEUE
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
@@ -542,7 +545,7 @@ LoadLevelTileData:
     CALL AssetLoader
     LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
-    ;
+    ; LOAD CLOUD PLATFORM IF NEEDED
     LD A, (CloudTypeOverride)
     OR A
     JP Z, +
@@ -564,18 +567,19 @@ LoadLevelTileData:
     DEC A
     JP Z, UndergroundSetup
 CastleSetup:
-    ; LAVA FOR SLOT 1
+    ; ANIMATED TILES
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
+        ; LAVA FOR SLOT 1
     LD HL, AnimatedBGTileInits@Lava
     LD DE, BGTileQueue1 + $01
     LD BC, $0008
     LDIR
-    ; NOTHING FOR SLOT 2
-    LD HL, BGTileQueue2.Timer
-    LD (HL), $FF
-    LD HL, BGTileQueue2.UpdateFlag
-    LD (HL), $00
+        ; SLOT 2 'QUESTION BLOCK' (4 TILE)
+    LD HL, AnimatedBGTileInits@QBlock
+    LD DE, BGTileQueue2 + $01
+    LD BC, $0008
+    LDIR
     ; UNIQUE TILES FOR CASTLE AREA
     LD A, ASSET_BGCASTLE
     CALL AssetLoader
@@ -594,21 +598,20 @@ CastleSetup:
     ; RETAINER/PRINCESS SPRITE
     JP TileLoadDone
 WaterAreaSetup:
-    ; WATER COIN FOR SLOT 0
+    ; ANIMATED TILES
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
+        ; WATER COIN FOR SLOT 0
     LD HL, AnimatedBGTileInits@WaterCoin
     LD DE, BGTileQueue0 + $01
     LD BC, $0008
     LDIR
-    ; WATER FOR SLOT 1
-    LD A, :AnimatedBGTileInits
-    LD (MAPPER_SLOT2), A
+        ; WATER FOR SLOT 1
     LD HL, AnimatedBGTileInits@WaterA0
     LD DE, BGTileQueue1 + $01
     LD BC, $0008
     LDIR
-    ; NOTHING FOR SLOT 2
+        ; NOTHING FOR SLOT 2
     LD HL, BGTileQueue2.Timer
     LD (HL), $FF
     LD HL, BGTileQueue2.UpdateFlag
@@ -636,37 +639,49 @@ OverWorldSetup:
     LD A, (OptionBitflags)
     AND A, $01
     JP NZ, TileLoadDone
+    ; DO DIFFERENT SETUP FOR SNOW LEVELS
     LD A, (BackgroundColorCtrl)
     CP A, $05
     JP Z, SnowOverworldSetup
     CP A, $06
     JP Z, SnowOverworldSetup
-    ; NOTHING FOR SLOT 1
-    LD HL, BGTileQueue1.Timer
-    LD (HL), $FF
-    LD HL, BGTileQueue1.UpdateFlag
-    LD (HL), $00
-    ; SLOT 2 'GRASS'
+    ; ANIMATED TILES
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
+        ; SLOT 1 'QUESTION BLOCK'
+    LD HL, AnimatedBGTileInits@QBlock
+    LD DE, BGTileQueue1 + $01
+    LD BC, $0008
+    LDIR
+        ; SLOT 2 'GRASS' (6 TILE)
+    LD HL, BGTileQueue2.Timer           ; ASSUME NO GRASS
+    LD (HL), $FF
+    LD HL, BGTileQueue2.UpdateFlag
+    LD (HL), $00
+    LD A, (BackgroundScenery)           ; IF BACKGROUND DOESN'T HAVE GRASS, SKIP
+    CP A, $02
+    JP NZ, TileLoadDone
     LD HL, AnimatedBGTileInits@Grass
     LD DE, BGTileQueue2 + $01
     LD BC, $0008
     LDIR
+    LD A, $01                           ; SET GRASS FLAG (BGTileQueue2 will do 6 tiles)
+    LD (BGTileQueue2GrassFlag), A
     JP TileLoadDone
 SnowOverworldSetup:
-    ; WATER FOR SLOT 1
+    ; ANIMATED TILES
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
+        ; WATER FOR SLOT 1
     LD HL, AnimatedBGTileInits@WaterA1
     LD DE, BGTileQueue1 + $01
     LD BC, $0008
     LDIR
-    ; NOTHING FOR SLOT 2
-    LD HL, BGTileQueue2.Timer
-    LD (HL), $FF
-    LD HL, BGTileQueue2.UpdateFlag
-    LD (HL), $00
+        ; SLOT 2 'QUESTION BLOCK' (4 TILE)
+    LD HL, AnimatedBGTileInits@QBlock
+    LD DE, BGTileQueue2 + $01
+    LD BC, $0008
+    LDIR
     ; UPLOAD TILES FOR SNOW (ONLY FOR DEFAULT GFX)
     LD A, ASSET_BGSNOW
     CALL AssetLoader
@@ -677,26 +692,27 @@ UndergroundSetup:
     ; UNIQUE TILES FOR UNDERGROUND AREA (ONLY FOR DEFAULT GFX)
     LD A, (OptionBitflags)
     AND A, $01
-    JP NZ, +
+    JP NZ, @ClearLaternArea
     LD A, ASSET_BGUNDERGROUND
     CALL AssetLoader
     LD (MAPPER_SLOT2), A
     CALL zx7_decompressVRAM
-    ; SLOT 1 'LATERN'
+    ; ANIMATED TILES
     LD A, :AnimatedBGTileInits
     LD (MAPPER_SLOT2), A
+        ; SLOT 1 'LATERN'
     LD HL, AnimatedBGTileInits@Latern
     LD DE, BGTileQueue1 + $01
     LD BC, $0008
     LDIR
-    ; NOTHING FOR SLOT 2
-    LD HL, BGTileQueue2.Timer
-    LD (HL), $FF
-    LD HL, BGTileQueue2.UpdateFlag
-    LD (HL), $00
+        ; SLOT 2 'QUESTION BLOCK' (4 TILE)
+    LD HL, AnimatedBGTileInits@QBlock
+    LD DE, BGTileQueue2 + $01
+    LD BC, $0008
+    LDIR
     JP TileLoadDone
     ; FOR NES GFX, CLEAR OUT LATERN GFX AREA
-+:
+@ClearLaternArea:
     LD HL, $3D80 | VRAMWRITE
     RST setVDPAddress
     LD B, $C0

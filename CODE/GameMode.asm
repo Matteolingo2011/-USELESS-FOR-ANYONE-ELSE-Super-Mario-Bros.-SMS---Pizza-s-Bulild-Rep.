@@ -343,12 +343,20 @@ AnimatedBGTileInits:
     .db StripeCount($04 * $20)
     .dw AnimiatedBGTiles@Lava
     .db $08, $10, $10
+@QBlock:
+    .dw $3C20 | VRAMWRITE
+    .db StripeCount($04 * $20)
+    .dw AnimiatedBGTiles@QBlock
+    .db $04, $08, $08
 .ENDS
 
 .SECTION "Animated Background Tile Tables" BANK BANK_SLOT2 SLOT 2 BITWINDOW 8 RETURNORG
 AnimiatedBGTiles:
 @Coin:
     .dw CoinFrame0, CoinFrame1, CoinFrame2, CoinFrame1
+    .dw $0000
+@WaterCoin:
+    .dw WCoinFrame0, WCoinFrame1, WCoinFrame2, WCoinFrame1
     .dw $0000
 @Grass:
     .dw GrassFrame0, GrassFrame1, GrassFrame2, GrassFrame1
@@ -364,19 +372,19 @@ AnimiatedBGTiles:
     .dw WaterA0Frame0, WaterA0Frame1, WaterA0Frame2, WaterA0Frame3
     .dw WaterA0Frame4, WaterA0Frame5, WaterA0Frame6, WaterA0Frame7
     .dw $0000
-@WaterCoin:
-    .dw WCoinFrame0, WCoinFrame1, WCoinFrame2, WCoinFrame1
-    .dw $0000
 @Lava:
     .dw LavaFrame0, LavaFrame1, LavaFrame2, LavaFrame3
     .dw LavaFrame4, LavaFrame5, LavaFrame6, LavaFrame7
+    .dw $0000
+@QBlock:
+    .dw QBlockFrame0, QBlockFrame2, QBlockFrame1, QBlockFrame2
     .dw $0000
 .ENDS
 
 ;   AnimatedBGTileQueue
 ;   $00:        animate flag
 ;   $01-$02:    vdp address
-;   $03:        number of tiles per frame
+;   $03:        frame byte count (in LDIs)
 ;   $04-$05:    current frame's tile address
 ;   $06:        total frame count
 ;   $07:        frame timer
@@ -386,11 +394,9 @@ AnimateBGTiles:
     ; DECREMENT TIMER AND BRANCH IF IT HASN'T EXPIRED
     LD HL, BGTileQueue0.Timer
     DEC (HL)
-    JP NZ, @UpdateSlot1
+    JR NZ, @UpdateSlot1
     ; SET TIMER TO RESET VALUE
-    INC L
-    LD A, (HL)
-    DEC L
+    LD A, (BGTileQueue0.TimerReset)
     LD (HL), A
     ; SET UPDATE FLAG
     LD A, $01
@@ -403,7 +409,7 @@ AnimateBGTiles:
     ; CHECK IF AT END OF THE LIST (HIGH BYTE == $00)
     LD A, (HL)                              ; high byte of next frame's tile address
     OR A
-    JP NZ, +
+    JR NZ, +
     ; MOVE POINTER BACK TO BEGINNING OF LIST IF SO
     LD A, (BGTileQueue0.FrameCount)
     ADD A, A
@@ -413,27 +419,26 @@ AnimateBGTiles:
 +:
     DEC L
     LD (BGTileQueue0.TileAdr), HL
+
 @UpdateSlot1:
     LD HL, BGTileQueue1.Timer
-    LD A, (HL)
-    OR A
-    JP M, @UpdateSlot2
+    ;LD A, (HL)
+    ;OR A
+    ;JP M, @UpdateSlot2
     DEC (HL)
-    JP NZ, @UpdateSlot2
-    INC L
-    LD A, (HL)
-    DEC L
+    JR NZ, @UpdateSlot2
+    LD A, (BGTileQueue1.TimerReset)
     LD (HL), A
     LD A, $01
     LD (BGTileQueue1.UpdateFlag), A
-    ;
+    ; 65/87
     LD HL, (BGTileQueue1.TileAdr)           ; get address of current tile data
     INC L
     INC L
     INC L
     LD A, (HL)                              ; high byte of next frame's tile address
     OR A
-    JP NZ, +
+    JR NZ, +
     LD A, (BGTileQueue1.FrameCount)
     ADD A, A
     SUB A, L
@@ -449,20 +454,18 @@ AnimateBGTiles:
     RET M
     DEC (HL)
     RET NZ
-    INC L
-    LD A, (HL)
-    DEC L
+    LD A, (BGTileQueue2.TimerReset)
     LD (HL), A
     LD A, $01
     LD (BGTileQueue2.UpdateFlag), A
-    ;
+    ; 65/87
     LD HL, (BGTileQueue2.TileAdr)           ; get address of current tile data
     INC L
     INC L
     INC L
     LD A, (HL)                              ; high byte of next frame's tile address
     OR A
-    JP NZ, +
+    JR NZ, +
     LD A, (BGTileQueue2.FrameCount)
     ADD A, A
     SUB A, L

@@ -1156,4 +1156,5 @@
     FMDetectedFlag:                 dsb $01
     SndFreqTablePtr:                dsb $02
     TitleLoadedFlag:                dsb $01
+    BGTileQueue2GrassFlag:          dsb $01
 .ENDS
